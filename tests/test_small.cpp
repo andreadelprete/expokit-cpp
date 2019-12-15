@@ -48,6 +48,8 @@ int  MAIN__( ) {  return 0; }
 
 #include <stdio.h>
 #include <iostream>
+#include <string>
+#include <cstdlib>
 
 
 using namespace Eigen;
@@ -82,9 +84,13 @@ int main( int argc, const char* argv[] )
 {
     printf( "\nStart test_small\n" );
 
+    int n_contacts = 1;
+    if(argc>1)
+    {
+      n_contacts = std::atoi(argv[1]);
+    }
     bool TEST_DGEXPV = false;
     int n_tests = 1000;
-    int n_contacts = 1;
     int m = n_contacts*3*2;      // matrix size
     double t = .005;     // time step
 
@@ -199,6 +205,26 @@ int main( int argc, const char* argv[] )
     printf("run time = %.3f ms\n", 1e3*(tac-tic)/n_tests);
     if(m<=MAX_PRINT_N)
         PRINT_MATRIX(expA);
+
+
+    /* Eigen OPTIMIZED Pade with scaling and squaring */
+    MatrixXd expA_2(m,m);
+    {
+      MatrixExponential<MatrixXd> expUtil(m);
+    EIGEN_MALLOC_NOT_ALLOWED
+
+      tic = clock_();
+      for(int i=0;i<n_tests;i++)
+      {
+        expUtil.compute(A, expA_2);
+      }
+      tac = clock_();
+
+      printf("\nWith Eigen OPTIMIZED everything went fine:\n");
+      printf("run time = %.3f ms\n", 1e3*(tac-tic)/n_tests);
+      if(m<=MAX_PRINT_N)
+          PRINT_MATRIX(expA_2);
+    }
 
     printf( "End test_small\n");
 }
