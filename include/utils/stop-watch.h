@@ -35,10 +35,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #pragma GCC visibility push(default)
 #endif
 
-//#define START_PROFILER(name)
-//#define STOP_PROFILER(name)
-#define START_PROFILER(name) getProfiler().start(name)
-#define STOP_PROFILER(name) getProfiler().stop(name)
+#define START_PROFILER(name)
+#define STOP_PROFILER(name)
+//#define START_PROFILER(name) getProfiler().start(name)
+//#define STOP_PROFILER(name) getProfiler().stop(name)
 
 #define STOP_WATCH_MAX_NAME_LENGTH 60
 #define STOP_WATCH_TIME_WIDTH 10
