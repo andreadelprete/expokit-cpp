@@ -197,7 +197,6 @@ int main( int argc, const char* argv[] )
     for(int i=0;i<n_tests;i++)
     {
         expA = A.exp();
-//        matrix_exp_compute(A, expA);
     }
     tac = clock_();
 
@@ -227,5 +226,7 @@ int main( int argc, const char* argv[] )
     }
 
     printf( "End test_small\n");
+
+    getProfiler().report_all(3);
 }
 

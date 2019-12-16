@@ -60,6 +60,8 @@ SET(HEADERS
     include/dgpadm.h
     include/expokit.h
     include/MatrixExponential.h
+    include/utils/stop-watch.h
+    include/utils/Stdafx.h
 )
 
 #LIST(REMOVE_DUPLICATES HEADERS)

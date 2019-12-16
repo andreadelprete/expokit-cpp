@@ -15,6 +15,8 @@
 #include "unsupported/Eigen/src/MatrixFunctions/StemFunction.h"
 #include <stdio.h>
 #include <iostream>
+
+#include "utils/stop-watch.h"
  
 namespace Eigen {
 namespace internal {
@@ -379,6 +381,7 @@ class MatrixExponential
 public:
   MatrixExponential(int n)
   {
+    getProfiler().start("MatrixExponential::resize");
     U.resize(n, n);
     V.resize(n, n);
     numer.resize(n, n);
@@ -391,27 +394,35 @@ public:
     A_scaled.resize(n,n);
     eye = MatrixType::Identity(n, n);
     ppLU = PartialPivLU<MatrixType>(n);
+    getProfiler().stop("MatrixExponential::resize");
   }
 
   void compute(const MatrixType& arg, MatrixType &result)
   {
-//    MatrixType U, V;
+    getProfiler().start("MatrixExponential::compute");
     int squarings;
+    getProfiler().start("MatrixExponential::computeUV");
     computeUV(arg, U, V, squarings); // Pade approximant is (U+V) / (-U+V)
+    getProfiler().stop("MatrixExponential::computeUV");
     numer = U + V;
     denom = -U + V;
+    getProfiler().start("MatrixExponential::computeLUdecomposition");
     ppLU.compute(denom);
+    getProfiler().stop("MatrixExponential::computeLUdecomposition");
+    getProfiler().start("MatrixExponential::LUsolve");
     tmp = ppLU.solve(numer);
-//    tmp = denom.partialPivLu().solve(numer);
+    getProfiler().stop("MatrixExponential::LUsolve");
 //    std::cout<<"Squaring: "<<squarings<<std::endl;
 
     // undo scaling by repeated squaring
+    getProfiler().start("MatrixExponential::squaring");
     for (int i=0; i<squarings; i++)
     {
       result.noalias() = tmp*tmp;
       tmp = result;
     }
-
+    getProfiler().stop("MatrixExponential::squaring");
+    getProfiler().stop("MatrixExponential::compute");
   }
 
   void computeUV(const MatrixType& arg, MatrixType& U, MatrixType& V, int& squarings)
@@ -433,7 +444,9 @@ public:
       frexp(l1norm / maxnorm, &squarings);
       if (squarings < 0) squarings = 0;
       A_scaled = arg.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
+      getProfiler().start("MatrixExponential::matrix_exp_pade13");
       matrix_exp_pade13(A_scaled, U, V);
+      getProfiler().stop("MatrixExponential::matrix_exp_pade13");
     }
   }
 
