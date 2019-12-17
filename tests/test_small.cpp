@@ -205,12 +205,35 @@ int main( int argc, const char* argv[] )
     if(m<=MAX_PRINT_N)
         PRINT_MATRIX(expA);
 
+    /* Eigen OPTIMIZED Pade with scaling and squaring */
+    int max_squarings = 8; //*expUtil.get_squarings();
+    for(int vec_squarings=0; vec_squarings<=max_squarings; vec_squarings++)
+    {
+      VectorXd expA_e1(m);
+      VectorXd e1 = VectorXd::Zero(m);
+      e1(0) = 1.0;
+      MatrixExponential<MatrixXd, VectorXd> expUtil(m);
+      EIGEN_MALLOC_NOT_ALLOWED
+
+      tic = clock_();
+      for(int i=0;i<n_tests;i++)
+      {
+        expUtil.computeExpTimesVector(A, e1, expA_e1, vec_squarings);
+      }
+      tac = clock_();
+
+      printf("\nWith Eigen computeExpTimesVector with vec_squarings=%d everything went fine:\n", vec_squarings);
+      printf("run time = %.3f ms\n", 1e3*(tac-tic)/n_tests);
+      printf("Number of squarings: %d\n", expUtil.get_squarings());
+      if(m<=MAX_PRINT_N)
+        PRINT_VECTOR(expA_e1);
+    }
 
     /* Eigen OPTIMIZED Pade with scaling and squaring */
     MatrixXd expA_2(m,m);
+    MatrixExponential<MatrixXd, VectorXd> expUtil(m);
     {
-      MatrixExponential<MatrixXd> expUtil(m);
-    EIGEN_MALLOC_NOT_ALLOWED
+      EIGEN_MALLOC_NOT_ALLOWED
 
       tic = clock_();
       for(int i=0;i<n_tests;i++)
@@ -221,9 +244,12 @@ int main( int argc, const char* argv[] )
 
       printf("\nWith Eigen OPTIMIZED everything went fine:\n");
       printf("run time = %.3f ms\n", 1e3*(tac-tic)/n_tests);
+      printf("Number of squarings: %d\n", expUtil.get_squarings());
       if(m<=MAX_PRINT_N)
           PRINT_MATRIX(expA_2);
     }
+
+
 
     printf( "End test_small\n");
 

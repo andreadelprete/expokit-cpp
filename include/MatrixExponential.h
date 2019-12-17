@@ -372,12 +372,14 @@ void matrix_exp_compute(const MatrixType& arg, ResultType &result)
 } // end namespace Eigen::internal
 
 
-template <typename MatrixType>
+template <typename MatrixType, typename VectorType>
 class MatrixExponential
 {
   MatrixType U, V, numer, denom;
-  MatrixType A_scaled, A2, A4, A6, A8, tmp, eye;
+  MatrixType A_scaled, A2, A4, A6, A8, tmp, eye, tmp2;
+  VectorType v_tmp;
   PartialPivLU< MatrixType > ppLU;
+  int squarings;
 
 public:
   MatrixExponential(int n)
@@ -392,16 +394,22 @@ public:
     A6.resize(n, n);
     A8.resize(n, n);
     tmp.resize(n, n);
+    tmp2.resize(n, n);
     A_scaled.resize(n,n);
     eye = MatrixType::Identity(n, n);
     ppLU = PartialPivLU<MatrixType>(n);
+    v_tmp.resize(n);
     STOP_PROFILER("MatrixExponential::resize");
+  }
+
+  int get_squarings() const
+  {
+    return squarings;
   }
 
   void compute(const MatrixType& arg, MatrixType &result)
   {
     START_PROFILER("MatrixExponential::compute");
-    int squarings;
     START_PROFILER("MatrixExponential::computeUV");
     computeUV(arg, U, V, squarings); // Pade approximant is (U+V) / (-U+V)
     STOP_PROFILER("MatrixExponential::computeUV");
@@ -419,11 +427,59 @@ public:
     START_PROFILER("MatrixExponential::squaring");
     for (int i=0; i<squarings; i++)
     {
-      result.noalias() = tmp*tmp;
-      tmp = result;
+      tmp2.noalias() = tmp*tmp;
+      tmp = tmp2;
     }
     STOP_PROFILER("MatrixExponential::squaring");
+    result = tmp;
     STOP_PROFILER("MatrixExponential::compute");
+  }
+
+  void computeExpTimesVector(const MatrixType& arg, const VectorType& v, VectorType &result, int vec_squarings)
+  {
+    START_PROFILER("MatrixExponential::computeExpTimesVector");
+    START_PROFILER("MatrixExponential:computeExpTimesVector:computeUV");
+    computeUV(arg, U, V, squarings); // Pade approximant is (U+V) / (-U+V)
+    STOP_PROFILER("MatrixExponential:computeExpTimesVector:computeUV");
+    numer = U + V;
+    denom = -U + V;
+    START_PROFILER("MatrixExponential:computeExpTimesVector:computeLUdecomposition");
+    ppLU.compute(denom);
+    STOP_PROFILER("MatrixExponential:computeExpTimesVector:computeLUdecomposition");
+    START_PROFILER("MatrixExponential:computeExpTimesVector:LUsolve");
+    tmp = ppLU.solve(numer);
+    STOP_PROFILER("MatrixExponential:computeExpTimesVector:LUsolve");
+//    std::cout<<"Squaring: "<<squarings<<std::endl;
+
+    // undo scaling by repeated squaring
+    START_PROFILER("MatrixExponential:computeExpTimesVector:squaringVector");
+    /*
+     * If the matrix size is n and the number of squaring is s, applying
+     * matrix-vector multiplications is only convenient if
+     *             n > (2^s)/s
+     *
+     * This is (2^s)/s for s in range(1,10): array([2, 2, 2, 4, 6, 10, 18, 32, 56])
+     */
+    // number of squarings implemented via matrix-vector multiplications
+//    int vec_squarings = 8;
+    // number of squarings implemented via matrix-matrix multiplications
+    int mat_squarings = squarings - vec_squarings;
+
+    for (int i=0; i<mat_squarings; i++)
+    {
+      tmp2.noalias() = tmp*tmp;
+      tmp = tmp2;
+    }
+
+    int two_pow_s = std::pow(2, vec_squarings);
+    v_tmp = v;
+    for (int i=0; i<two_pow_s; i++)
+    {
+      result.noalias() = tmp*v_tmp;
+      v_tmp = result;
+    }
+    STOP_PROFILER("MatrixExponential:computeExpTimesVector:squaringVector");
+    STOP_PROFILER("MatrixExponential::computeExpTimesVector");
   }
 
   void computeUV(const MatrixType& arg, MatrixType& U, MatrixType& V, int& squarings)
