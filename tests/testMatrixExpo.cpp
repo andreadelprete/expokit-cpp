@@ -22,7 +22,7 @@ int main(int argc, char **argv)
     Matrix<double, N, 1> xInit;
     xInit << 1, 2, 3;
 
-    MatrixExponential<Matrix<double, N, N>, Matrix<double, N, 1>> expUtil(N);
+    MatrixExponential<Matrix<double, N, N>, Matrix<double, N, 1> > expUtil(N);
 
     Matrix<double, N, 1> res1;
     Matrix<double, N, N> res2;

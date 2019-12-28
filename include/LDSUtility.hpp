@@ -24,8 +24,8 @@ public:
     LDSUtility();
     ~LDSUtility();
 
-    typedef const Eigen::Ref<const Matrix<double, N, 1>> RefVector;
-    typedef const Eigen::Ref<const Matrix<double, N, N>> RefMatrix;
+    typedef const Eigen::Ref<const Matrix<double, N, 1> > RefVector;
+    typedef const Eigen::Ref<const Matrix<double, N, N> > RefMatrix;
 
     // resize instead of new object
 
@@ -91,7 +91,7 @@ Matrix<double, N, 1> LDSUtility<N>::ComputeXt(RefMatrix& A, RefVector& b, RefVec
     Matrix<double, N + 1, 1> xTemp;
 
     // Matrix exponential - vectoring for now fixed to an arbitrary number
-    MatrixExponential<Matrix<double, N + 1, N + 1>, Matrix<double, N + 1, 1>> expUtil(N);    
+    MatrixExponential<Matrix<double, N + 1, N + 1>, Matrix<double, N + 1, 1> > expUtil(N+1);    
     expUtil.computeExpTimesVector(A0, x0, xTemp, 4);
     cout << "xTemp:---->\n" << xTemp << "\n\n";
 
