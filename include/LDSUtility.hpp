@@ -9,6 +9,7 @@
 // #include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
 
 using namespace Eigen;
+using namespace std;
 
 namespace expokit {
 
@@ -75,6 +76,7 @@ Matrix<double, N, 1> LDSUtility<N>::ComputeXt(RefMatrix& A, RefVector& b, RefVec
     Matrix<double, N + 1, N + 1> A0 = Matrix<double, N + 1, N + 1>::Zero();
     A0 << A0temp, Matrix<double, 1, N + 1>::Zero();
     A0 *= T;
+    cout << "A0:---->\n" << A0 << "\n\n";
     
     // Building augmented state x0
     Matrix<double, N + 1, 1> x0;
@@ -91,6 +93,12 @@ Matrix<double, N, 1> LDSUtility<N>::ComputeXt(RefMatrix& A, RefVector& b, RefVec
     // Matrix exponential - vectoring for now fixed to an arbitrary number
     MatrixExponential<Matrix<double, N + 1, N + 1>, Matrix<double, N + 1, 1>> expUtil(N);    
     expUtil.computeExpTimesVector(A0, x0, xTemp, 4);
+    cout << "xTemp:---->\n" << xTemp << "\n\n";
+
+    // Test whole matrix
+    Matrix<double, N + 1, N + 1> xTemp2;
+    expUtil.compute(A0, xTemp2);
+    cout << "xTemp2:---->\n" << xTemp2 << "\n\n";
 
     // Result matrix 
     Matrix<double, N, 1> x = z0 * xTemp;
