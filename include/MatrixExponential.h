@@ -55,6 +55,8 @@ public:
         return squarings;
     }
 
+    /** Compute the exponential of the given matrix arg and writes it in result.
+     */
     void compute(const MatrixType& arg, MatrixType& result)
     {
         START_PROFILER("MatrixExponential::compute");
@@ -82,7 +84,17 @@ public:
         STOP_PROFILER("MatrixExponential::compute");
     }
 
-    void computeExpTimesVector(const MatrixType& arg, const VectorType& v, VectorType& result, int vec_squarings)
+    /** Compute the product between the exponential of the given matrix arg and the given
+     * vector v. The result is written it the output variable result.
+     * The optional parameter vec_squarings specifies how many of the squaring operations
+     * are performed through matrix-vector products. The remaining squaring operations are
+     * then performed through matrix-matrix products, as in the classical scaling-and-squaring
+     * algorithm. Therefore, specifying vec_squarings=0 this method behaves in the same way
+     * as the compute method. Specifying vec_squarings<0, the number of vec_squarings is 
+     * automatically computed, but it may not be the best one, so if the user wants to achieve
+     * maximum speed, she/he should test different values of vec_squarings.
+     */
+    void computeExpTimesVector(const MatrixType& arg, const VectorType& v, VectorType& result, int vec_squarings=-1)
     {
         START_PROFILER("MatrixExponential::computeExpTimesVector");
         START_PROFILER("MatrixExponential:computeExpTimesVector:computeUV");
@@ -107,10 +119,22 @@ public:
           *
           * This is (2^s)/s for s in range(1,10): array([2, 2, 2, 4, 6, 10, 18, 32, 56])
           */
-        // number of squarings implemented via matrix-vector multiplications
-        //    int vec_squarings = 8;
+        if(vec_squarings<0)
+        {
+            int n = (int) v.size();
+            const int b[] = {2, 2, 2, 4, 6, 10, 18, 32, 56};
+            for(int i=8; i>=0; i--)
+                if(n>b[i])
+                    vec_squarings = i+1;
+        }
+
         // number of squarings implemented via matrix-matrix multiplications
         int mat_squarings = squarings - vec_squarings;
+        if(mat_squarings<0)
+        {
+            mat_squarings = 0;
+            vec_squarings = squarings;
+        }
 
         for (int i = 0; i < mat_squarings; i++) {
             tmp2.noalias() = tmp * tmp;
