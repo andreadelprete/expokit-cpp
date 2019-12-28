@@ -11,7 +11,7 @@ int main()
 {
     cout << "Start test integral\n";
     
-    LDSUtility<3> test;
+    LDSUtility<double, 3> test;
 
     MatrixXd A = MatrixXd::Identity(3, 3);
     MatrixXd b(3, 1);

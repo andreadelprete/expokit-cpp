@@ -12,7 +12,7 @@ using namespace std;
 
 #define N 3
 
-int main(int argc, char **argv)
+int main()
 {
     // Matrix<double, N, N> A = Matrix<double, N, N>::Random();
     // Matrix<double, N, 1> xInit = Matrix<double, N, 1>::Random();
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
     Matrix<double, N, 1> res1;
     Matrix<double, N, N> res2;
 
-    expUtil.computeExpTimesVector(A, xInit, res1, atoi(argv[1]));
+    expUtil.computeExpTimesVector(A, xInit, res1);
     expUtil.compute(A, res2);
 
     cout << "ExpTimesVector:---->\n"

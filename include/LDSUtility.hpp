@@ -4,9 +4,7 @@
 #include <Eigen/Core>
 #include "MatrixExponential.h"
 #include <iostream>
-// #include <Eigen/Eigenvalues>
 #include <Eigen/LU>
-// #include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
 
 using namespace Eigen;
 using namespace std;
@@ -14,98 +12,75 @@ using namespace std;
 namespace expokit {
 
 /*
-    The idea behing templating is to instanciate a number of these
-    classes, from 1 to N, where N is the number of active contacts 
+    Utility class that allows integrating a system with the form
+    Ax + b using a matrix exponential method 
 */
-template <int N>
+template <typename type, int N>
 class LDSUtility {
 private:
+    MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>> expUtil;
+
 public:
     LDSUtility();
     ~LDSUtility();
 
-    typedef const Eigen::Ref<const Matrix<double, N, 1> > RefVector;
-    typedef const Eigen::Ref<const Matrix<double, N, N> > RefMatrix;
-
-    // resize instead of new object
+    typedef const Eigen::Ref<const Matrix<type, N, 1>> RefVector;
+    typedef const Eigen::Ref<const Matrix<type, N, N>> RefMatrix;
 
     /**
-     * Computes the value of the Ax+b system at time T with initial conditions xInit
+     * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
-    //VectorXd Xt(MatrixXd A, VectorXd b, VectorXd xInit, double T, double dt = 0, bool AInvertible = false);
-    //RefVector ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, double T);
-    Matrix<double, N, 1> ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, double T);
-
+    Matrix<type, N, 1> ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T);
 
     /**
-     * Computes the integral of the Ax+b system at time T with initial conditions xInit
+     * Compute the value of the integral of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
-    //VectorXd IntegralXt(MatrixXd A, VectorXd b, VectorXd xInit, double T, double dt = 0, bool AInvertible = false);
-    // RefVector& ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, double T);
+    Matrix<type, N, 1> ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T);
 
     /**
-     * Computes double the integral of the Ax+b system at time T with initial conditions xInit
+     * Compute the value of the double integral of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
-    //VectorXd DoubleIntegralXt(MatrixXd A, VectorXd b, VectorXd xInit, double T, double dt = 0, bool AInvertible = false);
-    // RefVector& ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, double T);
-
-    /**
-     * Stub proposal for computing in parallel the quantities above
-     */
-    //MatrixXd ComputeParallel(Vector3d what, MatrixXd A, VectorXd b, VectorXd xInit, double T, double dt = 0, bool AInvertible = false);
-    //MatrixXd ComputeParallel(Vector3d what, RefMatrix &A, RefVector &b, RefVector &xInit, double T);
+    Matrix<type, N, 1> ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T);
 };
 
-template <int N>
-LDSUtility<N>::LDSUtility()
+template <typename type, int N>
+LDSUtility<type, N>::LDSUtility()
+{
+    expUtil = MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>> (N + 1);
+}
+
+template <typename type, int N>
+LDSUtility<type, N>::~LDSUtility()
 {
 }
 
-template <int N>
-LDSUtility<N>::~LDSUtility()
-{
-}
-
-template <int N>
-//typename LDSUtility<N>::RefVector LDSUtility<N>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, double T)
-Matrix<double, N, 1> LDSUtility<N>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, double T)
+template <typename type, int N>
+Matrix<type, N, 1> LDSUtility<type, N>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T)
 {
     // Building aumented matrix A0
-    Matrix<double, N, N + 1> A0temp;
-    A0temp << A, b;
-    Matrix<double, N + 1, N + 1> A0 = Matrix<double, N + 1, N + 1>::Zero();
-    A0 << A0temp, Matrix<double, 1, N + 1>::Zero();
+    Matrix<type, N + 1, N + 1> A0 = Matrix<type, N + 1, N + 1>::Zero();
+    A0.template block<N, N>(0, 0) = A;
+    A0.template block<N, 1>(0, N) = b;
     A0 *= T;
-    cout << "A0:---->\n" << A0 << "\n\n";
-    
+
     // Building augmented state x0
-    Matrix<double, N + 1, 1> x0;
+    Matrix<type, N + 1, 1> x0;
     x0 << xInit, 1;
 
     // Building filtering matrix z0
     // TODO - couldn't we just extract a block from the result?
-    Matrix<double, N, N + 1> z0;
-    z0 << Matrix<double, N, N>::Identity(), Matrix<double, N, 1>::Zero();
+    Matrix<type, N, N + 1> z0;
+    z0 << Matrix<type, N, N>::Identity(), Matrix<type, N, 1>::Zero();
 
     // Temp matrix
-    Matrix<double, N + 1, 1> xTemp;
+    Matrix<type, N + 1, 1> xTemp;
 
-    // Matrix exponential - vectoring for now fixed to an arbitrary number
-    MatrixExponential<Matrix<double, N + 1, N + 1>, Matrix<double, N + 1, 1> > expUtil(N+1);    
+    // Matrix exponential
     expUtil.computeExpTimesVector(A0, x0, xTemp);
-    cout << "xTemp:---->\n" << xTemp << "\n\n";
 
-    // Test whole matrix
-    Matrix<double, N + 1, N + 1> xTemp2;
-    expUtil.compute(A0, xTemp2);
-    cout << "xTemp2:---->\n" << xTemp2 << "\n\n";
-
-    // Result matrix 
-    Matrix<double, N, 1> x = z0 * xTemp;
-
-    return x;
+    // Extracting the interesting result
+    return xTemp.template block<N, 1>(0, 0);
 }
-
 }
 
 #endif
