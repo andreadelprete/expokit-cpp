@@ -18,7 +18,9 @@ namespace expokit {
 template <typename type, int N>
 class LDSUtility {
 private:
-    MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>> expUtil;
+    MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>> expUtil1;
+    MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1>> expUtil2;
+    MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1>> expUtil3;
 
 public:
     LDSUtility();
@@ -46,7 +48,10 @@ public:
 template <typename type, int N>
 LDSUtility<type, N>::LDSUtility()
 {
-    expUtil = MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>> (N + 1);
+    expUtil1 = MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>> (N + 1);
+    expUtil2 = MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1>> (N + 2);
+    expUtil3 = MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1>> (N + 3);
+
 }
 
 template <typename type, int N>
@@ -67,20 +72,67 @@ Matrix<type, N, 1> LDSUtility<type, N>::ComputeXt(RefMatrix& A, RefVector& b, Re
     Matrix<type, N + 1, 1> x0;
     x0 << xInit, 1;
 
-    // Building filtering matrix z0
-    // TODO - couldn't we just extract a block from the result?
-    Matrix<type, N, N + 1> z0;
-    z0 << Matrix<type, N, N>::Identity(), Matrix<type, N, 1>::Zero();
-
     // Temp matrix
     Matrix<type, N + 1, 1> xTemp;
 
     // Matrix exponential
-    expUtil.computeExpTimesVector(A0, x0, xTemp);
+    expUtil1.computeExpTimesVector(A0, x0, xTemp);
 
     // Extracting the interesting result
     return xTemp.template block<N, 1>(0, 0);
 }
+
+template <typename type, int N>
+Matrix<type, N, 1> LDSUtility<type, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T) {
+    // Building augmented state x0
+    Matrix<type, N + 1, 1> x1;
+    x1 << xInit, 1;
+
+    // Building aumented matrix A1
+    Matrix<type, N + 2, N + 2> A1 = Matrix<type, N + 2, N + 2>::Zero();
+    A1.template block<N, N>(0, 0) = A;
+    A1.template block<N, 1>(0, N) = b;
+    A1.template block<N + 1, 1>(0, N + 1) = x1;
+    A1 *= T;
+
+    // Vector z
+    Matrix<type, N + 2, 1> z = Matrix<type, N + 2, 1>::Zero();
+    z(N + 1, 0) = 1;
+
+    // Temp matrix
+    Matrix<type, N + 2, 1> xTemp;
+
+    // Matrix exponential
+    expUtil2.computeExpTimesVector(A1, z, xTemp);
+
+    // Extracting the interesting result
+    return xTemp.template block<N, 1>(0, 0);
+}
+
+template <typename type, int N>
+Matrix<type, N, 1> LDSUtility<type, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T) {
+    // Building aumented matrix A0
+    Matrix<type, N + 3, N + 3> A2 = Matrix<type, N + 3, N + 3>::Zero();
+    A2.template block<N, N>(0, 0) = A;
+    A2.template block<N, 1>(0, N) = b;
+    A2.template block<N, 1>(0, N + 1) = xInit;
+    A2.template block<2, 2>(N, N + 1) = Matrix<type, 2, 2>::Identity();
+    A2 *= T;
+
+    // Vector z
+    Matrix<type, N + 3, 1> z = Matrix<type, N + 3, 1>::Zero();
+    z(N + 2, 0) = 1;
+
+    // Temp matrix
+    Matrix<type, N + 3, 1> xTemp;
+
+    // Matrix exponential
+    expUtil3.computeExpTimesVector(A2, z, xTemp);
+
+    // Extracting the interesting result
+    return xTemp.template block<N, 1>(0, 0);
+}
+
 }
 
 #endif
