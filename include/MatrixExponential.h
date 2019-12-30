@@ -27,7 +27,7 @@ class MatrixExponential {
     MatrixType A_scaled, A2, A4, A6, A8, tmp, eye, tmp2;
     VectorType v_tmp;
     PartialPivLU<MatrixType> ppLU;
-    int squarings = 0;
+    int squarings;
 
 public:
     MatrixExponential() {}
@@ -49,6 +49,7 @@ public:
         eye = MatrixType::Identity(n, n);
         ppLU = PartialPivLU<MatrixType>(n);
         v_tmp.resize(n);
+        squarings = 0;
         STOP_PROFILER("MatrixExponential::resize");
     }
 

@@ -18,16 +18,16 @@ namespace expokit {
 template <typename type, int N>
 class LDSUtility {
 private:
-    MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>> expUtil1;
-    MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1>> expUtil2;
-    MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1>> expUtil3;
+    MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1> > expUtil1;
+    MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1> > expUtil2;
+    MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1> > expUtil3;
 
 public:
     LDSUtility();
     ~LDSUtility();
 
-    typedef const Eigen::Ref<const Matrix<type, N, 1>> RefVector;
-    typedef const Eigen::Ref<const Matrix<type, N, N>> RefMatrix;
+    typedef const Eigen::Ref<const Matrix<type, N, 1> > RefVector;
+    typedef const Eigen::Ref<const Matrix<type, N, N> > RefMatrix;
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -48,9 +48,9 @@ public:
 template <typename type, int N>
 LDSUtility<type, N>::LDSUtility()
 {
-    expUtil1 = MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>> (N + 1);
-    expUtil2 = MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1>> (N + 2);
-    expUtil3 = MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1>> (N + 3);
+    expUtil1 = MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1> > (N + 1);
+    expUtil2 = MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1> > (N + 2);
+    expUtil3 = MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1> > (N + 3);
 
 }
 
