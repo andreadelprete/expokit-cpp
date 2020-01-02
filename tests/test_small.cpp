@@ -82,6 +82,10 @@ int mat_vec_mul(double* x, double* y)
     return 0;
 }
 
+// TODO number of contacts is expected to be now at runtime - or at least the range
+
+#define N 
+
 int main(int argc, const char* argv[])
 {
     printf("\nStart test_small\n");

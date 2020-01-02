@@ -2,9 +2,8 @@
 #define INTEGRAL_UTILITY
 
 #include <Eigen/Core>
-#include "MatrixExponential.h"
+#include "MatrixExponential.hpp"
 #include <iostream>
-#include <Eigen/LU>
 
 using namespace Eigen;
 using namespace std;
@@ -18,9 +17,9 @@ namespace expokit {
 template <typename type, int N>
 class LDSUtility {
 private:
-    MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1> > expUtil1;
-    MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1> > expUtil2;
-    MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1> > expUtil3;
+    MatrixExponential<type, N + 1> expUtil1;
+    MatrixExponential<type, N + 2> expUtil2;
+    MatrixExponential<type, N + 3> expUtil3;
 
 public:
     LDSUtility();
@@ -48,10 +47,6 @@ public:
 template <typename type, int N>
 LDSUtility<type, N>::LDSUtility()
 {
-    expUtil1 = MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1> > (N + 1);
-    expUtil2 = MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1> > (N + 2);
-    expUtil3 = MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1> > (N + 3);
-
 }
 
 template <typename type, int N>
@@ -111,7 +106,7 @@ Matrix<type, N, 1> LDSUtility<type, N>::ComputeIntegralXt(RefMatrix& A, RefVecto
 
 template <typename type, int N>
 Matrix<type, N, 1> LDSUtility<type, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T) {
-    // Building aumented matrix A0
+    // Building aumented matrix A2
     Matrix<type, N + 3, N + 3> A2 = Matrix<type, N + 3, N + 3>::Zero();
     A2.template block<N, N>(0, 0) = A;
     A2.template block<N, 1>(0, N) = b;
