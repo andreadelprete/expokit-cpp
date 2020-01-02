@@ -5,12 +5,13 @@
 #ifndef EIGEN_MATRIX_EXPONENTIAL_EXPOKIT
 #define EIGEN_MATRIX_EXPONENTIAL_EXPOKIT
 
-#include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
-#include <iostream>
-#include <stdio.h>
+#include "utils/stop-watch.h"
 #include <Eigen/Core>
 #include <Eigen/LU>
-#include "utils/stop-watch.h"
+#include <iostream>
+#include <stdio.h>
+#include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
+
 
 using namespace Eigen;
 
@@ -21,8 +22,8 @@ class MatrixExponential {
 
 private:
     // Typedefs to make code more readable
-    typedef const Ref<const Matrix<type, N, 1> > RefVector;
-    typedef const Ref<const Matrix<type, N, N> > RefMatrix;
+    typedef const Ref<const Matrix<type, N, 1>> RefVector;
+    typedef const Ref<const Matrix<type, N, N>> RefMatrix;
     typedef Matrix<type, N, N> MatrixType;
     typedef Matrix<type, N, 1> VectorType;
 
@@ -42,8 +43,7 @@ public:
 
     /** Compute the exponential of the given matrix arg and writes it in result.
      */
-    void compute(const MatrixType& arg, MatrixType& result);
-
+    Matrix<type, N, N> compute(const RefMatrix& arg);
 
     /** Compute the product between the exponential of the given matrix arg and the given
      * vector v. The result is written it the output variable result.
@@ -55,8 +55,7 @@ public:
      * automatically computed, but it may not be the best one, so if the user wants to achieve
      * maximum speed, she/he should test different values of vec_squarings.
      */
-    void computeExpTimesVector(const MatrixType& arg, const VectorType& v, VectorType& result, int vec_squarings=-1);
-
+    Matrix<type, N, 1> computeExpTimesVector(const RefMatrix& arg, const RefVector& v, int vec_squarings = -1);
 
 private:
     void computeUV(const MatrixType& arg, MatrixType& U, MatrixType& V, int& squarings);
@@ -68,7 +67,6 @@ private:
     */
     void matrix_exp_pade3(const MatrixType& A, MatrixType& U, MatrixType& V);
     
-
     /** \brief Compute the (5,5)-Pad&eacute; approximant to the exponential.
     *
     *  After exit, \f$ (V+U)(V-U)^{-1} \f$ is the Pad&eacute;
@@ -98,10 +96,8 @@ private:
     void matrix_exp_pade13(const MatrixType& A, MatrixType& U, MatrixType& V);
 };
 
-
-
 template <typename type, int N>
-MatrixExponential<type, N>::MatrixExponential()    
+MatrixExponential<type, N>::MatrixExponential()
 {
     START_PROFILER("MatrixExponential::constructor");
     eye = MatrixType::Identity(N, N);
@@ -110,9 +106,8 @@ MatrixExponential<type, N>::MatrixExponential()
     STOP_PROFILER("MatrixExponential::constructor");
 }
 
-
 template <typename type, int N>
-void MatrixExponential<type, N>::compute(const MatrixType& arg, MatrixType& result)
+Matrix<type, N, N> MatrixExponential<type, N>::compute(const RefMatrix& arg)
 {
     START_PROFILER("MatrixExponential::compute");
     START_PROFILER("MatrixExponential::computeUV");
@@ -135,12 +130,12 @@ void MatrixExponential<type, N>::compute(const MatrixType& arg, MatrixType& resu
         tmp = tmp2;
     }
     STOP_PROFILER("MatrixExponential::squaring");
-    result = tmp;
+    return tmp;
     STOP_PROFILER("MatrixExponential::compute");
 }
 
 template <typename type, int N>
-void MatrixExponential<type, N>::computeExpTimesVector(const MatrixType& arg, const VectorType& v, VectorType& result, int vec_squarings)
+Matrix<type, N, 1> MatrixExponential<type, N>::computeExpTimesVector(const RefMatrix& arg, const RefVector& v, int vec_squarings)
 {
     START_PROFILER("MatrixExponential::computeExpTimesVector");
     START_PROFILER("MatrixExponential:computeExpTimesVector:computeUV");
@@ -165,19 +160,17 @@ void MatrixExponential<type, N>::computeExpTimesVector(const MatrixType& arg, co
       *
       * This is (2^s)/s for s in range(1,10): array([2, 2, 2, 4, 6, 10, 18, 32, 56])
       */
-    if(vec_squarings<0)
-    {
-        int n = (int) v.size();
-        const int b[] = {2, 2, 2, 4, 6, 10, 18, 32, 56};
-        for(int i=8; i>=0; i--)
-            if(n>b[i])
-                vec_squarings = i+1;
+    if (vec_squarings < 0) {
+        int n = (int)v.size();
+        const int b[] = { 2, 2, 2, 4, 6, 10, 18, 32, 56 };
+        for (int i = 8; i >= 0; i--)
+            if (n > b[i])
+                vec_squarings = i + 1;
     }
 
     // number of squarings implemented via matrix-matrix multiplications
     int mat_squarings = squarings - vec_squarings;
-    if(mat_squarings<0)
-    {
+    if (mat_squarings < 0) {
         mat_squarings = 0;
         vec_squarings = squarings;
     }
@@ -187,12 +180,17 @@ void MatrixExponential<type, N>::computeExpTimesVector(const MatrixType& arg, co
         tmp = tmp2;
     }
 
+    // TODO change this to a look-up table or shifting a 1
     int two_pow_s = (int)std::pow(2, vec_squarings);
+
     v_tmp = v;
+    Matrix<type, N, 1> result;
     for (int i = 0; i < two_pow_s; i++) {
         result.noalias() = tmp * v_tmp;
         v_tmp = result;
     }
+    
+    return result;
     STOP_PROFILER("MatrixExponential:computeExpTimesVector:squaringVector");
     STOP_PROFILER("MatrixExponential::computeExpTimesVector");
 }
@@ -249,8 +247,6 @@ void MatrixExponential<type, N>::matrix_exp_pade5(const MatrixType& A, MatrixTyp
     V = b[4] * A4 + b[2] * A2 + b[0] * eye;
 }
 
-
-
 template <typename type, int N>
 void MatrixExponential<type, N>::matrix_exp_pade7(const MatrixType& A, MatrixType& U, MatrixType& V)
 {
@@ -271,8 +267,7 @@ void MatrixExponential<type, N>:: matrix_exp_pade9(const MatrixType& A, MatrixTy
     //    typedef typename NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
     const RealScalar b[] = { 17643225600., 8821612800., 2075673600., 302702400., 30270240.,
-                             2162160., 110880., 3960., 90., 1.
-                           };
+        2162160., 110880., 3960., 90., 1. };
     A2 = A * A;
     A4 = A2 * A2;
     A6 = A4 * A2;
@@ -288,9 +283,8 @@ void MatrixExponential<type, N>:: matrix_exp_pade13(const MatrixType& A, MatrixT
     //    typedef typename NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
     const RealScalar b[] = { 64764752532480000., 32382376266240000., 7771770303897600.,
-                             1187353796428800., 129060195264000., 10559470521600., 670442572800.,
-                             33522128640., 1323241920., 40840800., 960960., 16380., 182., 1.
-                           };
+        1187353796428800., 129060195264000., 10559470521600., 670442572800.,
+        33522128640., 1323241920., 40840800., 960960., 16380., 182., 1. };
     A2.noalias() = A * A;
     A4.noalias() = A2 * A2;
     A6.noalias() = A4 * A2;
@@ -312,9 +306,6 @@ void MatrixExponential<type, N>:: matrix_exp_pade13(const MatrixType& A, MatrixT
     V.noalias() += b[2] * A2;
     V.noalias() += b[0] * eye;
 }
-
-
-
 
 } // end namespace Eigen
 

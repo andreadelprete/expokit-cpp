@@ -1,7 +1,6 @@
 #include "Eigen/Core"
 #include <iostream>
 
-
 #include "LDSUtility.hpp"
 
 using namespace expokit;
@@ -10,7 +9,7 @@ using namespace std;
 int main()
 {
     cout << "Start test integral\n";
-    
+
     LDSUtility<double, 3> test;
 
     MatrixXd A = MatrixXd::Identity(3, 3);
