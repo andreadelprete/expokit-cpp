@@ -1,0 +1,21 @@
+testMatrixExpo- N_TESTS: 10000000 N_RUNS: 10 size N: 4
+compute(A, res2) took 9875062 us
+compute(A, res2) took 10000884 us
+compute(A, res2) took 9683418 us
+compute(A, res2) took 9671053 us
+compute(A, res2) took 9667996 us
+compute(A, res2) took 9667871 us
+compute(A, res2) took 9649364 us
+compute(A, res2) took 9663299 us
+compute(A, res2) took 9663448 us
+compute(A, res2) took 9683278 us
+computeExpTimesVector(A, xInit, res1) took 9809821 us
+computeExpTimesVector(A, xInit, res1) took 9801076 us
+computeExpTimesVector(A, xInit, res1) took 9970347 us
+computeExpTimesVector(A, xInit, res1) took 9794138 us
+computeExpTimesVector(A, xInit, res1) took 9794822 us
+computeExpTimesVector(A, xInit, res1) took 9791602 us
+computeExpTimesVector(A, xInit, res1) took 9790593 us
+computeExpTimesVector(A, xInit, res1) took 9805846 us
+computeExpTimesVector(A, xInit, res1) took 9812500 us
+computeExpTimesVector(A, xInit, res1) took 9808018 us
