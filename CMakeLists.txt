@@ -59,7 +59,7 @@ SET(HEADERS
     include/dgexpv.h
     include/dgpadm.h
     include/expokit.h
-    include/MatrixExponential.h
+    include/MatrixExponential.hpp
     include/utils/stop-watch.h
     include/utils/Stdafx.h
 )

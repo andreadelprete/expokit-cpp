@@ -2,8 +2,7 @@
 
 #include <Eigen/Core>
 
-#include "MatrixExponential.h"
-#include <Eigen/LU>
+#include "MatrixExponential.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -14,7 +13,7 @@
 
 using namespace Eigen;
 using namespace std;
-// using namespace expokit;
+using namespace expokit;
 
 #define N 4
 #define N_TESTS 10000000

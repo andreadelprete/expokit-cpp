@@ -2,9 +2,8 @@
 #define INTEGRAL_UTILITY
 
 #include <Eigen/Core>
-#include "MatrixExponential.h"
+#include "MatrixExponential.hpp"
 #include <iostream>
-#include <Eigen/LU>
 
 using namespace Eigen;
 using namespace std;
@@ -18,18 +17,18 @@ namespace expokit {
 template <typename type, int N>
 class LDSUtility {
 private:
-    MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1> > expUtil1;
-    MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1> > expUtil2;
-    MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1> > expUtil3;
+    MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>> expUtil1;
+    MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1>> expUtil2;
+    MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1>> expUtil3;
 
 public:
     LDSUtility();
     ~LDSUtility();
 
-    typedef const Eigen::Ref<const Matrix<type, N, 1> > RefVector;
-    typedef const Eigen::Ref<const Matrix<type, N, N> > RefMatrix;
+    typedef const Eigen::Ref<const Matrix<type, N, 1>> RefVector;
+    typedef const Eigen::Ref<const Matrix<type, N, N>> RefMatrix;
 
-    typedef Eigen::Ref<Matrix<type, N, 1> > RefVectorParam;
+    typedef Eigen::Ref<Matrix<type, N, 1>> RefVectorParam;
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -50,10 +49,9 @@ public:
 template <typename type, int N>
 LDSUtility<type, N>::LDSUtility()
 {
-    expUtil1 = MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1> > (N + 1);
-    expUtil2 = MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1> > (N + 2);
-    expUtil3 = MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1> > (N + 3);
-
+    expUtil1 = MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>>(N + 1);
+    expUtil2 = MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1>>(N + 2);
+    expUtil3 = MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1>>(N + 3);
 }
 
 template <typename type, int N>
@@ -85,7 +83,8 @@ void LDSUtility<type, N>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit
 }
 
 template <typename type, int N>
-void LDSUtility<type, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T, RefVectorParam out) {
+void LDSUtility<type, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T, RefVectorParam out)
+{
     // Building augmented state x0
     Matrix<type, N + 1, 1> x1;
     x1 << xInit, 1;
@@ -108,11 +107,12 @@ void LDSUtility<type, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVecto
     expUtil2.computeExpTimesVector(A1, z, xTemp);
 
     // Extracting the interesting result
-    out =  xTemp.template block<N, 1>(0, 0);
+    out = xTemp.template block<N, 1>(0, 0);
 }
 
 template <typename type, int N>
-void LDSUtility<type, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T, RefVectorParam out) {
+void LDSUtility<type, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, type T, RefVectorParam out)
+{
     // Building aumented matrix A0
     Matrix<type, N + 3, N + 3> A2 = Matrix<type, N + 3, N + 3>::Zero();
     A2.template block<N, N>(0, 0) = A;
@@ -132,9 +132,8 @@ void LDSUtility<type, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, Re
     expUtil3.computeExpTimesVector(A2, z, xTemp);
 
     // Extracting the interesting result
-    out =  xTemp.template block<N, 1>(0, 0);
+    out = xTemp.template block<N, 1>(0, 0);
 }
-
 }
 
 #endif

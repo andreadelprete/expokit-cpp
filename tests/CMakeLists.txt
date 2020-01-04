@@ -22,9 +22,9 @@ MACRO(ADD_TESTCASE NAME PKGS)
 ENDMACRO(ADD_TESTCASE)
 
 # --- RULES -------------------------------------------------------------------
-ADD_TESTCASE(test_dense_small "f2c")
-ADD_TESTCASE(test_dense_large "f2c")
-ADD_TESTCASE(test_small       "eigen3")
+#ADD_TESTCASE(test_dense_small "f2c")
+#ADD_TESTCASE(test_dense_large "f2c")
+#ADD_TESTCASE(test_small       "eigen3")
 ADD_TESTCASE(testIntegral     "eigen3")
 ADD_TESTCASE(testMatrixExpo   "eigen3")
 
