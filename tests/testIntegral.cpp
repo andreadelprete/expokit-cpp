@@ -8,29 +8,36 @@
 using namespace expokit;
 using namespace std;
 
-#define N 4
-#define N_TESTS 1000000
+#define N 16
+#define M N*3*2
+#define N_TESTS 1000
 #define N_RUNS 10
 
 int main()
 {
     cout << "Start test integral\n";
 
-    LDSUtility<double, N> test;
+    LDSUtility<double, M> test;
 
     ofstream myfile;
-    myfile.open("/home/olli/Desktop/INT-test both interfaces use return val PT4.txt");
+    myfile.open("/home/olli/Desktop/INT-test with bigger mat PT4.txt");
     myfile << "testIntegral - N_TESTS: " << N_TESTS << " N_RUNS: " << N_RUNS << " size N: " << N << "\n";
 
-    Matrix<double, N, N> A;
-    A << 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8;
-    A *= 0.1;
-    Matrix<double, N, 1> xInit;
-    xInit << 1, 2, 3, 4;
-    Matrix<double, N, 1> b;
-    b << 4, 3, 2, 1;
+    int m2 = int(M / 2);
+    double stiffness = 1e5;
+    double damping = 1e2;
+    MatrixXd U = MatrixXd::Random(m2, m2);
+    MatrixXd Upsilon = U * U.transpose();
+    MatrixXd K = MatrixXd::Identity(m2, m2) * stiffness;
+    MatrixXd B = MatrixXd::Identity(m2, m2) * damping;
+    MatrixXd A = MatrixXd::Zero(M, M);
+    A.topRightCorner(m2, m2) = MatrixXd::Identity(m2, m2);
+    A.bottomLeftCorner(m2, m2) = -Upsilon * K;
+    A.bottomRightCorner(m2, m2) = -Upsilon * B;
+    MatrixXd xInit = MatrixXd::Random(M, 1);
+    MatrixXd b = MatrixXd::Random(M, 1);
 
-    Matrix<double, N, 1> res;
+    Matrix<double, M, 1> res;
 
     struct timeval stop, start;
 
