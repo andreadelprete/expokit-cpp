@@ -24,7 +24,7 @@ int main()
     cout << "Start test Matrix Exponential\n";
 
     ofstream myfile;
-    myfile.open("/home/olli/Desktop/MAT-test changed template PT2.txt");
+    myfile.open("/home/olli/Desktop/MAT-test both interfaces use return val PT4.txt");
     myfile << "testMatrixExpo- N_TESTS: " << N_TESTS << " N_RUNS: " << N_RUNS << " size N: " << N << "\n";
 
     Matrix<double, N, N> A;
@@ -44,7 +44,7 @@ int main()
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
-            expUtil.compute(A, res2);
+            res2 = expUtil.compute(A);
         }
         gettimeofday(&stop, NULL);
         printf("%i ", k);
@@ -56,7 +56,7 @@ int main()
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
-            expUtil.computeExpTimesVector(A, xInit, res1);
+            res1 = expUtil.computeExpTimesVector(A, xInit);
         }
         gettimeofday(&stop, NULL);
         printf("%i ", k);

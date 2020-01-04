@@ -19,7 +19,7 @@ int main()
     LDSUtility<double, N> test;
 
     ofstream myfile;
-    myfile.open("/home/olli/Desktop/INT-test switch to return val PT3.txt");
+    myfile.open("/home/olli/Desktop/INT-test both interfaces use return val PT4.txt");
     myfile << "testIntegral - N_TESTS: " << N_TESTS << " N_RUNS: " << N_RUNS << " size N: " << N << "\n";
 
     Matrix<double, N, N> A;
