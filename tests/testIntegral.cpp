@@ -20,7 +20,7 @@ int main()
 
     ofstream myfile;
     myfile.open("/home/olli/Desktop/INT1b5b5f56e - test return params.txt");
-    myfile << "testIntegral - N_TESTS: " << N_TESTS << " N_RUNS: " << N_RUNS << "\n";
+    myfile << "testIntegral - N_TESTS: " << N_TESTS << " N_RUNS: " << N_RUNS << " size N: " << N << "\n";
 
     Matrix<double, N, N> A;
     A << 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8;
@@ -34,39 +34,47 @@ int main()
 
     struct timeval stop, start;
 
+    cout << "ComputeXt run number: ";
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
             test.ComputeXt(A, b, xInit, 1, res);
         }
         gettimeofday(&stop, NULL);
+        printf("%i ", k);
+        fflush(stdout);
         myfile << "ComputeXt(A, b, xInit, 1, res) took " << ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec) << " us\n";
     }
-    cout << "x(T):\n"
+    cout << "\nx(T):\n"
          << res;
 
+    cout << "\n\nComputeIntegralXt run number: ";
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
             test.ComputeIntegralXt(A, b, xInit, 1, res);
         }
         gettimeofday(&stop, NULL);
+        printf("%i ", k);
+        fflush(stdout);
         myfile << "ComputeIntegralXt(A, b, xInit, 1, res) took " << ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec) << " us\n";
     }
-    cout << "\n\nxint(T):\n"
+    cout << "\nxint(T):\n"
          << res;
 
+    cout << "\n\nComputeDoubleIntegralXt run number: ";
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
             test.ComputeDoubleIntegralXt(A, b, xInit, 1, res);
         }
         gettimeofday(&stop, NULL);
+        printf("%i ", k);
+        fflush(stdout);
         myfile << "ComputeDoubleIntegralXt(A, b, xInit, 1, res) took " << ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec) << " us\n";
     }
-    cout << "\n\nxintint(T):\n"
-         << res;
+    cout << "\nxintint(T):\n"
+         << res << "\n";
 
-    cout << "\n";
     return 0;
 }
