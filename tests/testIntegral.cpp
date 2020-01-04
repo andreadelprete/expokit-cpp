@@ -19,7 +19,7 @@ int main()
     LDSUtility<double, N> test;
 
     ofstream myfile;
-    myfile.open("/home/olli/Desktop/INT-test changed template PT2.txt");
+    myfile.open("/home/olli/Desktop/INT-test switch to return val PT3.txt");
     myfile << "testIntegral - N_TESTS: " << N_TESTS << " N_RUNS: " << N_RUNS << " size N: " << N << "\n";
 
     Matrix<double, N, N> A;
@@ -38,7 +38,7 @@ int main()
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
-            test.ComputeXt(A, b, xInit, 1, res);
+            res = test.ComputeXt(A, b, xInit, 1);
         }
         gettimeofday(&stop, NULL);
         printf("%i ", k);
@@ -52,7 +52,7 @@ int main()
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
-            test.ComputeIntegralXt(A, b, xInit, 1, res);
+            res = test.ComputeIntegralXt(A, b, xInit, 1);
         }
         gettimeofday(&stop, NULL);
         printf("%i ", k);
@@ -66,7 +66,7 @@ int main()
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
-            test.ComputeDoubleIntegralXt(A, b, xInit, 1, res);
+            res = test.ComputeDoubleIntegralXt(A, b, xInit, 1);
         }
         gettimeofday(&stop, NULL);
         printf("%i ", k);
