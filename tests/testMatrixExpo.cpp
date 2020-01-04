@@ -24,7 +24,7 @@ int main()
     cout << "Start test Matrix Exponential\n";
 
     ofstream myfile;
-    myfile.open("/home/olli/Desktop/MAT1b5b5f56e - test return params.txt");
+    myfile.open("/home/olli/Desktop/MAT-test changed template PT2.txt");
     myfile << "testMatrixExpo- N_TESTS: " << N_TESTS << " N_RUNS: " << N_RUNS << " size N: " << N << "\n";
 
     Matrix<double, N, N> A;
@@ -33,7 +33,7 @@ int main()
     Matrix<double, N, 1> xInit;
     xInit << 1, 2, 3, 4;
 
-    MatrixExponential<Matrix<double, N, N>, Matrix<double, N, 1>> expUtil(N);
+    MatrixExponential<double, N> expUtil;
 
     Matrix<double, N, 1> res1;
     Matrix<double, N, N> res2;

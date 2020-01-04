@@ -17,9 +17,9 @@ namespace expokit {
 template <typename type, int N>
 class LDSUtility {
 private:
-    MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>> expUtil1;
-    MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1>> expUtil2;
-    MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1>> expUtil3;
+    MatrixExponential<type, N + 1> expUtil1;
+    MatrixExponential<type, N + 2> expUtil2;
+    MatrixExponential<type, N + 3> expUtil3;
 
 public:
     LDSUtility();
@@ -49,9 +49,6 @@ public:
 template <typename type, int N>
 LDSUtility<type, N>::LDSUtility()
 {
-    expUtil1 = MatrixExponential<Matrix<type, N + 1, N + 1>, Matrix<type, N + 1, 1>>(N + 1);
-    expUtil2 = MatrixExponential<Matrix<type, N + 2, N + 2>, Matrix<type, N + 2, 1>>(N + 2);
-    expUtil3 = MatrixExponential<Matrix<type, N + 3, N + 3>, Matrix<type, N + 3, 1>>(N + 3);
 }
 
 template <typename type, int N>

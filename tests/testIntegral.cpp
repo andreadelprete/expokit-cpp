@@ -19,7 +19,7 @@ int main()
     LDSUtility<double, N> test;
 
     ofstream myfile;
-    myfile.open("/home/olli/Desktop/INT1b5b5f56e - test return params.txt");
+    myfile.open("/home/olli/Desktop/INT-test changed template PT2.txt");
     myfile << "testIntegral - N_TESTS: " << N_TESTS << " N_RUNS: " << N_RUNS << " size N: " << N << "\n";
 
     Matrix<double, N, N> A;

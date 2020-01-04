@@ -1,32 +1,31 @@
-// This file is part of Eigen, a lightweight C++ template library
-// for linear algebra.
-//
-// Copyright (C) 2009, 2010, 2013 Jitse Niesen <jitse@maths.leeds.ac.uk>
-// Copyright (C) 2011, 2013 Chen-Pang He <jdh8@ms63.hinet.net>
-//
-// This Source Code Form is subject to the terms of the Mozilla
-// Public License v. 2.0. If a copy of the MPL was not distributed
-// with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+/*
+    Insert fancy disclaimer here
+*/
 
 #ifndef EIGEN_MATRIX_EXPONENTIAL_EXPOKIT
 #define EIGEN_MATRIX_EXPONENTIAL_EXPOKIT
 
-//#include "StemFunction.h"
 #include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
-// #include "unsupported/Eigen/src/MatrixFunctions/StemFunction.h"
-#include <Eigen/Core>
-#include <Eigen/LU>
 #include <iostream>
 #include <stdio.h>
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include "utils/stop-watch.h"
 
 using namespace Eigen;
 
-#include "utils/stop-watch.h"
-
 namespace expokit {
 
-template <typename MatrixType, typename VectorType>
+template <typename type, int N>
 class MatrixExponential {
+    
+private:
+    // Typedefs to make code more readable
+    typedef const Ref<const Matrix<type, N, 1> > RefVector;
+    typedef const Ref<const Matrix<type, N, N> > RefMatrix;
+    typedef Matrix<type, N, N> MatrixType;
+    typedef Matrix<type, N, 1> VectorType;
+
     MatrixType U, V, numer, denom;
     MatrixType A_scaled, A2, A4, A6, A8, tmp, eye, tmp2;
     VectorType v_tmp;
@@ -34,27 +33,13 @@ class MatrixExponential {
     int squarings;
 
 public:
-    MatrixExponential() {}
-
-    MatrixExponential(int n)
+    MatrixExponential()
     {
-        START_PROFILER("MatrixExponential::resize");
-        U.resize(n, n);
-        V.resize(n, n);
-        numer.resize(n, n);
-        denom.resize(n, n);
-        A2.resize(n, n);
-        A4.resize(n, n);
-        A6.resize(n, n);
-        A8.resize(n, n);
-        tmp.resize(n, n);
-        tmp2.resize(n, n);
-        A_scaled.resize(n, n);
-        eye = MatrixType::Identity(n, n);
-        ppLU = PartialPivLU<MatrixType>(n);
-        v_tmp.resize(n);
+        START_PROFILER("MatrixExponential::constructor");
+        eye = MatrixType::Identity(N, N);
+        ppLU = PartialPivLU<MatrixType>(N);
         squarings = 0;
-        STOP_PROFILER("MatrixExponential::resize");
+        STOP_PROFILER("MatrixExponential::constructor");
     }
 
     int get_squarings() const
@@ -101,7 +86,7 @@ public:
      * automatically computed, but it may not be the best one, so if the user wants to achieve
      * maximum speed, she/he should test different values of vec_squarings.
      */
-    void computeExpTimesVector(const MatrixType& arg, const VectorType& v, VectorType& result, int vec_squarings = -1)
+    void computeExpTimesVector(const MatrixType& arg, const VectorType& v, VectorType& result, int vec_squarings=-1)
     {
         START_PROFILER("MatrixExponential::computeExpTimesVector");
         START_PROFILER("MatrixExponential:computeExpTimesVector:computeUV");
@@ -126,17 +111,19 @@ public:
           *
           * This is (2^s)/s for s in range(1,10): array([2, 2, 2, 4, 6, 10, 18, 32, 56])
           */
-        if (vec_squarings < 0) {
-            int n = (int)v.size();
-            const int b[] = { 2, 2, 2, 4, 6, 10, 18, 32, 56 };
-            for (int i = 8; i >= 0; i--)
-                if (n > b[i])
-                    vec_squarings = i + 1;
+        if(vec_squarings<0)
+        {
+            int n = (int) v.size();
+            const int b[] = {2, 2, 2, 4, 6, 10, 18, 32, 56};
+            for(int i=8; i>=0; i--)
+                if(n>b[i])
+                    vec_squarings = i+1;
         }
 
         // number of squarings implemented via matrix-matrix multiplications
         int mat_squarings = squarings - vec_squarings;
-        if (mat_squarings < 0) {
+        if(mat_squarings<0)
+        {
             mat_squarings = 0;
             vec_squarings = squarings;
         }
@@ -156,6 +143,8 @@ public:
         STOP_PROFILER("MatrixExponential::computeExpTimesVector");
     }
 
+
+private:
     void computeUV(const MatrixType& arg, MatrixType& U, MatrixType& V, int& squarings)
     {
         using std::frexp;
