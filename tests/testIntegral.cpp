@@ -1,30 +1,87 @@
 #include "Eigen/Core"
+#include <fstream>
 #include <iostream>
+#include <sys/time.h>
 
 #include "LDSUtility.hpp"
 
 using namespace expokit;
 using namespace std;
 
+#define N 16
+#define M N*3*2
+#define N_TESTS 1000
+#define N_RUNS 10
+
 int main()
 {
     cout << "Start test integral\n";
 
-    LDSUtility<double, 3> test;
+    LDSUtility<double, M> test;
 
-    MatrixXd A = MatrixXd::Identity(3, 3);
-    MatrixXd b(3, 1);
-    b << 2, 2, 2;
-    MatrixXd x(3, 1);
-    x << 3, 3, 3;
+    ofstream myfile;
+    myfile.open("/home/olli/Desktop/INT-test with bigger mat PT4.txt");
+    myfile << "testIntegral - N_TESTS: " << N_TESTS << " N_RUNS: " << N_RUNS << " size N: " << N << "\n";
 
-    cout << "x(T):\n";
-    cout << test.ComputeXt(A, b, x, 1);
-    cout << "\n\nxint(T):\n";
-    cout << test.ComputeIntegralXt(A, b, x, 1);
-    cout << "\n\nxintint(T):\n";
-    cout << test.ComputeDoubleIntegralXt(A, b, x, 1);
+    int m2 = int(M / 2);
+    double stiffness = 1e5;
+    double damping = 1e2;
+    MatrixXd U = MatrixXd::Random(m2, m2);
+    MatrixXd Upsilon = U * U.transpose();
+    MatrixXd K = MatrixXd::Identity(m2, m2) * stiffness;
+    MatrixXd B = MatrixXd::Identity(m2, m2) * damping;
+    MatrixXd A = MatrixXd::Zero(M, M);
+    A.topRightCorner(m2, m2) = MatrixXd::Identity(m2, m2);
+    A.bottomLeftCorner(m2, m2) = -Upsilon * K;
+    A.bottomRightCorner(m2, m2) = -Upsilon * B;
+    MatrixXd xInit = MatrixXd::Random(M, 1);
+    MatrixXd b = MatrixXd::Random(M, 1);
 
-    cout << "\n";
+    Matrix<double, M, 1> res;
+
+    struct timeval stop, start;
+
+    cout << "ComputeXt run number: ";
+    for (int k = 0; k < N_RUNS; k++) {
+        gettimeofday(&start, NULL);
+        for (int i = 0; i < N_TESTS; i++) {
+            res = test.ComputeXt(A, b, xInit, 1);
+        }
+        gettimeofday(&stop, NULL);
+        printf("%i ", k);
+        fflush(stdout);
+        myfile << "ComputeXt(A, b, xInit, 1, res) took " << ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec) << " us\n";
+    }
+    cout << "\nx(T):\n"
+         << res;
+
+    cout << "\n\nComputeIntegralXt run number: ";
+    for (int k = 0; k < N_RUNS; k++) {
+        gettimeofday(&start, NULL);
+        for (int i = 0; i < N_TESTS; i++) {
+            res = test.ComputeIntegralXt(A, b, xInit, 1);
+        }
+        gettimeofday(&stop, NULL);
+        printf("%i ", k);
+        fflush(stdout);
+        myfile << "ComputeIntegralXt(A, b, xInit, 1, res) took " << ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec) << " us\n";
+    }
+    cout << "\nxint(T):\n"
+         << res;
+
+    cout << "\n\nComputeDoubleIntegralXt run number: ";
+    for (int k = 0; k < N_RUNS; k++) {
+        gettimeofday(&start, NULL);
+        for (int i = 0; i < N_TESTS; i++) {
+            res = test.ComputeDoubleIntegralXt(A, b, xInit, 1);
+        }
+        gettimeofday(&stop, NULL);
+        printf("%i ", k);
+        fflush(stdout);
+        myfile << "ComputeDoubleIntegralXt(A, b, xInit, 1, res) took " << ((stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec) << " us\n";
+    }
+    cout << "\nxintint(T):\n"
+         << res << "\n";
+
     return 0;
 }
