@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
 
-
 using namespace Eigen;
 
 namespace expokit {
@@ -22,8 +21,8 @@ class MatrixExponential {
 
 private:
     // Typedefs to make code more readable
-    typedef const Ref<const Matrix<type, N, 1> > RefVector;
-    typedef const Ref<const Matrix<type, N, N> > RefMatrix;
+    typedef const Ref<const Matrix<type, N, 1>> RefVector;
+    typedef const Ref<const Matrix<type, N, N>> RefMatrix;
     typedef Matrix<type, N, 1> VectorType;
     typedef Matrix<type, N, N> MatrixType;
 
@@ -35,6 +34,9 @@ private:
 
 public:
     MatrixExponential();
+    MatrixExponential(int n);
+
+    void resize(int n);
 
     int get_squarings() const
     {
@@ -58,6 +60,9 @@ public:
     Matrix<type, N, 1> computeExpTimesVector(const RefMatrix& arg, const RefVector& v, int vec_squarings = -1);
 
 private:
+    void initStatic();
+    void initDynamic(int n);
+
     void computeUV(const MatrixType& arg);
 
     /** \brief Compute the (3,3)-Pad&eacute; approximant to the exponential.
@@ -66,7 +71,7 @@ private:
     *  approximant of \f$ \exp(A) \f$ around \f$ A = 0 \f$.
     */
     void matrix_exp_pade3(const MatrixType& A);
-    
+
     /** \brief Compute the (5,5)-Pad&eacute; approximant to the exponential.
     *
     *  After exit, \f$ (V+U)(V-U)^{-1} \f$ is the Pad&eacute;
@@ -100,10 +105,55 @@ template <typename type, int N>
 MatrixExponential<type, N>::MatrixExponential()
 {
     START_PROFILER("MatrixExponential::constructor");
+    if (N == Dynamic) {
+        initDynamic(2); // Init to dym 2 for no particular reason
+    } else {
+        initStatic();
+    }
+    STOP_PROFILER("MatrixExponential::constructor");
+}
+
+template <typename type, int N>
+MatrixExponential<type, N>::MatrixExponential(int n)
+{
+    if (N == Dynamic) {
+        initDynamic(n);
+    } else {
+        initStatic(); // parameter n ignored
+    }
+}
+
+template <typename type, int N>
+void MatrixExponential<type, N>::initStatic()
+{
     eye = MatrixType::Identity(N, N);
     ppLU = PartialPivLU<MatrixType>(N);
     squarings = 0;
-    STOP_PROFILER("MatrixExponential::constructor");
+}
+
+template <typename type, int N>
+void MatrixExponential<type, N>::initDynamic(int n)
+{
+    U.resize(n, n);
+    V.resize(n, n);
+    numer.resize(n, n);
+    denom.resize(n, n);
+    A2.resize(n, n);
+    A4.resize(n, n);
+    A6.resize(n, n);
+    A8.resize(n, n);
+    tmp.resize(n, n);
+    tmp2.resize(n, n);
+    A_scaled.resize(n, n);
+    eye = MatrixType::Identity(n, n);
+    v_tmp.resize(n);
+    squarings = 0;
+}
+
+template <typename type, int N>
+void MatrixExponential<type, N>::resize(int n){
+    if (N == Dynamic) 
+        initDynamic(n);
 }
 
 template <typename type, int N>
@@ -181,7 +231,7 @@ Matrix<type, N, 1> MatrixExponential<type, N>::computeExpTimesVector(const RefMa
     }
 
     //int two_pow_s = (int)std::pow(2, vec_squarings);
-    int two_pow_s = (unsigned int) 1 << vec_squarings;
+    int two_pow_s = (unsigned int)1 << vec_squarings;
 
     v_tmp = v;
     Matrix<type, N, 1> result;
@@ -189,7 +239,7 @@ Matrix<type, N, 1> MatrixExponential<type, N>::computeExpTimesVector(const RefMa
         result.noalias() = tmp * v_tmp;
         v_tmp = result;
     }
-    
+
     return result; // Relying on NRVO
     STOP_PROFILER("MatrixExponential:computeExpTimesVector:squaringVector");
     STOP_PROFILER("MatrixExponential::computeExpTimesVector");
@@ -260,7 +310,7 @@ void MatrixExponential<type, N>::matrix_exp_pade7(const MatrixType& A)
 }
 
 template <typename type, int N>
-void MatrixExponential<type, N>:: matrix_exp_pade9(const MatrixType& A)
+void MatrixExponential<type, N>::matrix_exp_pade9(const MatrixType& A)
 {
     //    typedef typename NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
@@ -276,7 +326,7 @@ void MatrixExponential<type, N>:: matrix_exp_pade9(const MatrixType& A)
 }
 
 template <typename type, int N>
-void MatrixExponential<type, N>:: matrix_exp_pade13(const MatrixType& A)
+void MatrixExponential<type, N>::matrix_exp_pade13(const MatrixType& A)
 {
     //    typedef typename NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
