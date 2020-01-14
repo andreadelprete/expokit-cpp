@@ -1,0 +1,22 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "g++ build debug",
+            "command": "/usr/bin/g++",
+            "args": [
+                "-g",
+                "${file}",
+                "-DEIGEN_RUNTIME_NO_MALLOC",
+                "-I/opt/openrobots/include/eigen3",
+                "-I/${fileDirname}/../include",
+                "-o",
+                "${fileDirname}/../build/debugVSC/${fileBasenameNoExtension}"
+            ],
+            "options": {
+                "cwd": "/usr/bin"
+            }
+        }
+    ],
+    "version": "2.0.0"
+}
