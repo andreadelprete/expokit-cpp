@@ -14,15 +14,31 @@
 //#define EIGEN_RUNTIME_NO_MALLOC
 //#define EIGEN_NO_MALLOC
 #include <Eigen/Core>
-//#include <unsupported/Eigen/MatrixFunctions>
-
-#include <Eigen/Core>
-#include <Eigen/Eigenvalues>
-#include <Eigen/LU>
+#include <cstdlib>
+#include <iostream>
+#include <stdio.h>
+#include <string>
 #include <cfloat>
 #include <list>
+#ifdef __cplusplus
+extern "C"
+{
+
+#include "clock.h"
+#include "dgchbv.h"
+#include "dgexpv.h"
+#include "dgpadm.h"
+
+    // you need to define MAIN__ function because f2c complains if it doesn't find one
+    int MAIN__() { return 0; }
+}
+#endif
+
+
+
+
 #include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
-#include "MatrixExponential.h"
+#include "MatrixExponential.hpp"
 
 #ifdef EIGEN_RUNTIME_NO_MALLOC
 #define EIGEN_MALLOC_ALLOWED Eigen::internal::set_is_malloc_allowed(true);
@@ -32,26 +48,13 @@
 #define EIGEN_MALLOC_NOT_ALLOWED
 #endif
 
-#ifdef __cplusplus
-extern "C" {
 
-#include "clock.h"
-#include "dgchbv.h"
-#include "dgexpv.h"
-#include "dgpadm.h"
 
-// you need to define MAIN__ function because f2c complains if it doesn't find one
-int MAIN__() { return 0; }
-}
-#endif
 
-#include <cstdlib>
-#include <iostream>
-#include <stdio.h>
-#include <string>
 
 using namespace Eigen;
 using namespace std;
+using namespace expokit;
 
 /** List of available parameters of IOFormat constructor:
 precision       number of digits for floating point values, or one of the special constants StreamPrecision and FullPrecision.
@@ -74,7 +77,7 @@ static const Eigen::IOFormat CleanFmt(5, 0, ", ", "\n", "[", "]");
               << a.format(CleanFmt) << std::endl
 
 /* Computes y = A*x */
-int mat_vec_mul(double* x, double* y)
+int mat_vec_mul(double *x, double *y)
 {
     cout << "mat vec mul\n";
     for (int i = 0; i < 5; i++)
@@ -84,20 +87,21 @@ int mat_vec_mul(double* x, double* y)
 
 // TODO number of contacts is expected to be now at runtime - or at least the range
 
-#define N 
+#define N
 
-int main(int argc, const char* argv[])
+int main(int argc, const char *argv[])
 {
     printf("\nStart test_small\n");
 
     int n_contacts = 1;
-    if (argc > 1) {
+    if (argc > 1)
+    {
         n_contacts = std::atoi(argv[1]);
     }
     bool TEST_DGEXPV = false;
     int n_tests = 1000;
     int m = n_contacts * 3 * 2; // matrix size
-    double t = .005; // time step
+    double t = .005;            // time step
 
     printf("Number of contact points %d\n\n", n_contacts);
     printf("Matrix size %d\n\n", m);
@@ -120,13 +124,14 @@ int main(int argc, const char* argv[])
     PRINT_MATRIX(A);
 
     /* ---  Krylov-based method (for sparse matrices) ... */
-    if (TEST_DGEXPV) {
+    if (TEST_DGEXPV)
+    {
         int mk = (m < 31) ? m - 2 : 30; //maximum size for the Krylov basis
         double tol = 0.;
         VectorXd y = VectorXd::Zero(m);
         y[0] = 1.;
         VectorXd res = VectorXd::Zero(m);
-        double Anorm = m * 0.5; // an approximation of some norm of A
+        double Anorm = m * 0.5;                                // an approximation of some norm of A
         int lwsp = m * (mk + 2) + 5 * (mk + 2) * (mk + 2) + 7; // length of workspace
         VectorXd wsp(lwsp);
         int liwsp = mk + 2;
@@ -134,7 +139,7 @@ int main(int argc, const char* argv[])
         int itrace = 1; // running mode. 0=silent, 1=print step-by-step info */
         int iflag;
         dgexpv_(&m, &mk, &t, y.data(), res.data(), &tol, &Anorm,
-            wsp.data(), &lwsp, iwsp.data(), &liwsp, (U_fp)mat_vec_mul, &itrace, &iflag);
+                wsp.data(), &lwsp, iwsp.data(), &liwsp, (U_fp)mat_vec_mul, &itrace, &iflag);
         cout << "end dgexpv_\n";
         cout << "exp(t*A)e_1=" << y.transpose().format(CleanFmt) << endl;
     }
@@ -146,7 +151,8 @@ int main(int argc, const char* argv[])
     VectorXi iwsp(m);
     int ns, iexp, iflag;
     double tic = clock_();
-    for (int i = 0; i < n_tests; i++) {
+    for (int i = 0; i < n_tests; i++)
+    {
         //A = MatrixXd::Random(m, m);
         dgpadm_(&ideg, &m, &t, A.data(), &m, wsp.data(), &lwsp, iwsp.data(), &iexp, &ns, &iflag);
     }
@@ -157,10 +163,13 @@ int main(int argc, const char* argv[])
     else
         printf("\nWith DGPADM there was a problem, iflag=%d\n", iflag);
 
-    if (m <= MAX_PRINT_N) {
+    if (m <= MAX_PRINT_N)
+    {
         printf("exp(t*A) =\n");
-        for (int i = 1; i <= m; ++i) {
-            for (int j = 1; j <= m; ++j) {
+        for (int i = 1; i <= m; ++i)
+        {
+            for (int j = 1; j <= m; ++j)
+            {
                 printf("%f ", wsp[iexp + (j - 1) * m + i - 2]);
             }
             printf("\n");
@@ -173,7 +182,8 @@ int main(int argc, const char* argv[])
     VectorXd y = VectorXd::Zero(m);
     doublecomplex cwsp[10007];
     tic = clock_();
-    for (int i = 0; i < n_tests; i++) {
+    for (int i = 0; i < n_tests; i++)
+    {
         y.tail(m - 1).setZero();
         y[0] = 1.0;
         dgchbv_(&m, &t, A.data(), &m, y.data(), cwsp, iwsp.data(), &iflag);
@@ -193,7 +203,8 @@ int main(int argc, const char* argv[])
     //    EIGEN_MALLOC_NOT_ALLOWED
 
     tic = clock_();
-    for (int i = 0; i < n_tests; i++) {
+    for (int i = 0; i < n_tests; i++)
+    {
         expA = A.exp();
     }
     tac = clock_();
@@ -205,16 +216,18 @@ int main(int argc, const char* argv[])
 
     /* Eigen OPTIMIZED Pade with scaling and squaring */
     int max_squarings = 8; //*expUtil.get_squarings();
-    for (int vec_squarings = 0; vec_squarings <= max_squarings; vec_squarings++) {
+    for (int vec_squarings = 0; vec_squarings <= max_squarings; vec_squarings++)
+    {
         VectorXd expA_e1(m);
         VectorXd e1 = VectorXd::Zero(m);
         e1(0) = 1.0;
-        MatrixExponential<MatrixXd, VectorXd> expUtil(m);
+        MatrixExponential<double, Dynamic> expUtil(m);
         EIGEN_MALLOC_NOT_ALLOWED
 
         tic = clock_();
-        for (int i = 0; i < n_tests; i++) {
-            expUtil.computeExpTimesVector(A, e1, expA_e1, vec_squarings);
+        for (int i = 0; i < n_tests; i++)
+        {
+            expA_e1 = expUtil.computeExpTimesVector(A, e1, vec_squarings);
         }
         tac = clock_();
 
@@ -228,13 +241,14 @@ int main(int argc, const char* argv[])
 
     /* Eigen OPTIMIZED Pade with scaling and squaring */
     MatrixXd expA_2(m, m);
-    MatrixExponential<MatrixXd, VectorXd> expUtil(m);
+    MatrixExponential<double, Dynamic> expUtil(m);
     {
         EIGEN_MALLOC_NOT_ALLOWED
 
         tic = clock_();
-        for (int i = 0; i < n_tests; i++) {
-            expUtil.compute(A, expA_2);
+        for (int i = 0; i < n_tests; i++)
+        {
+            expA_2 = expUtil.compute(A);
         }
         tac = clock_();
 
@@ -246,7 +260,6 @@ int main(int argc, const char* argv[])
     }
 
     printf("End test_small\n");
-
 
     getProfiler().report_all(3);
 }

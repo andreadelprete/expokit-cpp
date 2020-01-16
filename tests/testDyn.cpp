@@ -18,22 +18,29 @@ using namespace expokit;
 int main()
 {
     cout << "Start test DYN Matrix Exponential\n";
+    MatrixXd mRes(5, 5);
+    VectorXd vRes(5);
+
     MatrixXd A = MatrixXd::Random(5, 5);
+    VectorXd v = VectorXd::Random(5);
     
     // Dynamical usage
     MatrixExponential<double, Dynamic> test1; // Default init to dim 2
     //cout << test1.compute(A) << endl << endl; // Error
     test1.resize(5);
-    cout << test1.compute(A) << endl << endl;
+    test1.compute(A, mRes);
+    cout << mRes << endl << endl;
 
     MatrixExponential<double, Dynamic> test2(5);
-    cout << test2.compute(A) << endl << endl;
+    test2.compute(A, mRes);
+    cout << vRes << endl << endl;
 
 
     // Static usage
     MatrixExponential<double, 5> test3;
-    test3.resize(5); // Does nothing
-    cout << test3.compute(A) << endl << endl;
+    //test3.resize(5); // Does nothing, error thrown if != 5
+    test3.compute(A, mRes);
+    cout << mRes << endl << endl;
 
 
     cout << "Start test DYN LDSUtility\n";

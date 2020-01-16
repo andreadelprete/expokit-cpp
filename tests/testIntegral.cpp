@@ -2,22 +2,33 @@
 #include <fstream>
 #include <iostream>
 #include <sys/time.h>
+#include "utils/stop-watch.h"
 
 #include "LDSUtility.hpp"
+
+
+#ifdef EIGEN_RUNTIME_NO_MALLOC
+#define EIGEN_MALLOC_ALLOWED Eigen::internal::set_is_malloc_allowed(true);
+#define EIGEN_MALLOC_NOT_ALLOWED Eigen::internal::set_is_malloc_allowed(false);
+#else
+#define EIGEN_MALLOC_ALLOWED
+#define EIGEN_MALLOC_NOT_ALLOWED
+#endif
 
 using namespace expokit;
 using namespace std;
 
-#define N 16
+#define N 4
 #define M N*3*2
 #define N_TESTS 1000
-#define N_RUNS 10
+#define N_RUNS 1
 
 int main()
 {
     cout << "Start test integral\n";
 
-    LDSUtility<double, M> test;
+    LDSUtility<double, M> test; // Static
+    //LDSUtility<double, Dynamic> test(M); // Dynamic
 
     ofstream myfile;
     myfile.open("/home/olli/Desktop/INT-test with bigger mat PT4.txt");
@@ -40,6 +51,8 @@ int main()
     Matrix<double, M, 1> res;
 
     struct timeval stop, start;
+
+    EIGEN_MALLOC_NOT_ALLOWED
 
     cout << "ComputeXt run number: ";
     for (int k = 0; k < N_RUNS; k++) {
@@ -82,6 +95,9 @@ int main()
     }
     cout << "\nxintint(T):\n"
          << res << "\n";
+
+
+    getProfiler().report_all(3);
 
     return 0;
 }
