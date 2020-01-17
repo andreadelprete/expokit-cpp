@@ -1,10 +1,7 @@
-#include <Eigen/Core>
 #include "LDSUtility.hpp"
 #include "MatrixExponential.hpp"
-#include <fstream>
+#include <Eigen/Core>
 #include <iostream>
-#include <stdlib.h> /* atoi */
-#include <sys/time.h>
 
 #ifdef EIGEN_RUNTIME_NO_MALLOC
 #define EIGEN_MALLOC_ALLOWED Eigen::internal::set_is_malloc_allowed(true);
@@ -44,7 +41,6 @@ int main()
     expUtil.compute(A, res2);
     cout << res2 * xInit << endl
          << endl;
-
 
     // LDSUtility
     Matrix<double, N, 1> b;

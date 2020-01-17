@@ -1,10 +1,9 @@
-#include <Eigen/Core>
 #include "MatrixExponential.hpp"
+#include <Eigen/Core>
 #include <fstream>
 #include <iostream>
 #include <stdlib.h> /* atoi */
 #include <sys/time.h>
-
 
 #ifdef EIGEN_RUNTIME_NO_MALLOC
 #define EIGEN_MALLOC_ALLOWED Eigen::internal::set_is_malloc_allowed(true);
@@ -50,7 +49,7 @@ int main()
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
-            res2 = expUtil.compute(A);
+            expUtil.compute(A, res2);
         }
         gettimeofday(&stop, NULL);
         printf("%i ", k);
@@ -62,7 +61,7 @@ int main()
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
-            res1 = expUtil.computeExpTimesVector(A, xInit);
+            expUtil.computeExpTimesVector(A, xInit, res1);
         }
         gettimeofday(&stop, NULL);
         printf("%i ", k);

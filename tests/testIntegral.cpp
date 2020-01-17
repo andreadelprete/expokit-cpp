@@ -1,11 +1,10 @@
 #include "Eigen/Core"
+#include "utils/stop-watch.h"
 #include <fstream>
 #include <iostream>
 #include <sys/time.h>
-#include "utils/stop-watch.h"
 
 #include "LDSUtility.hpp"
-
 
 #ifdef EIGEN_RUNTIME_NO_MALLOC
 #define EIGEN_MALLOC_ALLOWED Eigen::internal::set_is_malloc_allowed(true);
@@ -19,7 +18,7 @@ using namespace expokit;
 using namespace std;
 
 #define N 4
-#define M N*3*2
+#define M N * 3 * 2
 #define N_TESTS 1000
 #define N_RUNS 1
 
@@ -58,7 +57,7 @@ int main()
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
-            res = test.ComputeXt(A, b, xInit, 1);
+            test.ComputeXt(A, b, xInit, 1, res);
         }
         gettimeofday(&stop, NULL);
         printf("%i ", k);
@@ -72,7 +71,7 @@ int main()
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
-            res = test.ComputeIntegralXt(A, b, xInit, 1);
+            test.ComputeIntegralXt(A, b, xInit, 1, res);
         }
         gettimeofday(&stop, NULL);
         printf("%i ", k);
@@ -86,7 +85,7 @@ int main()
     for (int k = 0; k < N_RUNS; k++) {
         gettimeofday(&start, NULL);
         for (int i = 0; i < N_TESTS; i++) {
-            res = test.ComputeDoubleIntegralXt(A, b, xInit, 1);
+            test.ComputeDoubleIntegralXt(A, b, xInit, 1, res);
         }
         gettimeofday(&stop, NULL);
         printf("%i ", k);
@@ -95,7 +94,6 @@ int main()
     }
     cout << "\nxintint(T):\n"
          << res << "\n";
-
 
     getProfiler().report_all(3);
 

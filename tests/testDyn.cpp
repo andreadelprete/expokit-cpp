@@ -3,12 +3,8 @@
 #include "MatrixExponential.hpp"
 #include "LDSUtility.hpp"
 
-#include <fstream>
 #include <iostream>
 
-#include <stdlib.h> /* atoi */
-
-#include <sys/time.h>
 
 using namespace Eigen;
 using namespace std;
@@ -33,7 +29,7 @@ int main()
 
     MatrixExponential<double, Dynamic> test2(5);
     test2.compute(A, mRes);
-    cout << vRes << endl << endl;
+    cout << mRes << endl << endl;
 
 
     // Static usage
@@ -49,21 +45,30 @@ int main()
 
     // Dynamical usage
     LDSUtility<double, Dynamic> util1; // Defuailt init to dim 2
-    // cout << util1.ComputeXt(A, b, x, 1) << endl << endl; // Error
+    //util1.ComputeXt(A, b, x, 1, vRes); // Error
     util1.resize(5);
-    cout << util1.ComputeXt(A, b, x, 1) << endl << endl;
-    cout << util1.ComputeIntegralXt(A, b, x, 1) << endl << endl;
-    cout << util1.ComputeDoubleIntegralXt(A, b, x, 1) << endl << endl;
+    util1.ComputeXt(A, b, x, 1, vRes);
+    cout << vRes << endl << endl;
+    util1.ComputeIntegralXt(A, b, x, 1, vRes);
+    cout << vRes << endl << endl;
+    util1.ComputeDoubleIntegralXt(A, b, x, 1, vRes);
+    cout << vRes << endl << endl;
 
     LDSUtility<double, Dynamic> util2(5);
-    cout << util2.ComputeXt(A, b, x, 1) << endl << endl;
-    cout << util2.ComputeIntegralXt(A, b, x, 1) << endl << endl;
-    cout << util2.ComputeDoubleIntegralXt(A, b, x, 1) << endl << endl;
-
+    util1.ComputeXt(A, b, x, 1, vRes);
+    cout << vRes << endl << endl;
+    util1.ComputeIntegralXt(A, b, x, 1, vRes);
+    cout << vRes << endl << endl;
+    util1.ComputeDoubleIntegralXt(A, b, x, 1, vRes);
+    cout << vRes << endl << endl;
 
     // Static usage
     LDSUtility<double, 5> util3;
-    cout << util3.ComputeXt(A, b, x, 1) << endl << endl;
-    cout << util3.ComputeIntegralXt(A, b, x, 1) << endl << endl;
-    cout << util3.ComputeDoubleIntegralXt(A, b, x, 1) << endl << endl;
+    util1.ComputeXt(A, b, x, 1, vRes);
+    cout << vRes << endl << endl;
+    util1.ComputeIntegralXt(A, b, x, 1, vRes);
+    cout << vRes << endl << endl;
+    util1.ComputeDoubleIntegralXt(A, b, x, 1, vRes);
+    cout << vRes << endl << endl;
+    
 }
