@@ -5,6 +5,7 @@
 #include <iostream>
 #include "MatrixExponential.hpp"
 
+
 using namespace Eigen;
 using namespace std;
 
@@ -25,8 +26,19 @@ private:
     Matrix<T, N + 2, 1> res2;
     Matrix<T, N + 3, 1> res3;
 
+    Matrix<T, N + 1, N + 1> A0;
+    Matrix<T, N + 1, 1> x0;
+
+    Matrix<T, N + 2, N + 2> A1;
+
+    Matrix<T, N + 2, 1> z1;
+
+    Matrix<T, N + 3, N + 3> A2;
+
+    Matrix<T, N + 3, 1> z2;
+
 public:
-    LDSUtility() {}
+    LDSUtility();
 
     typedef const Ref<const Matrix<T, N, 1>> RefVector;
     typedef const Ref<const Matrix<T, N, N>> RefMatrix;
@@ -50,16 +62,24 @@ public:
 };
 
 template <typename T, int N>
+LDSUtility<T, N>::LDSUtility()
+{
+    A0 = Matrix<T, N + 1, N + 1>::Zero();
+    A1 = Matrix<T, N + 2, N + 2>::Zero();
+    z1 = Matrix<T, N + 2, 1>::Zero();
+    A2 = Matrix<T, N + 3, N + 3>::Zero();
+    z2 = Matrix<T, N + 3, 1>::Zero();
+}
+
+template <typename T, int N>
 void LDSUtility<T, N>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
     // Building aumented matrix A0
-    Matrix<T, N + 1, N + 1> A0 = Matrix<T, N + 1, N + 1>::Zero();
     A0.template block<N, N>(0, 0) = A;
     A0.template block<N, 1>(0, N) = b;
     A0 *= step;
 
     // Building augmented state x0
-    Matrix<T, N + 1, 1> x0;
     x0 << xInit, 1;
 
     // Matrix exponential Extracting the interesting result
@@ -71,22 +91,19 @@ template <typename T, int N>
 void LDSUtility<T, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
     // Building augmented state x0
-    Matrix<T, N + 1, 1> x1;
-    x1 << xInit, 1;
+    x0 << xInit, 1;
 
     // Building aumented matrix A1
-    Matrix<T, N + 2, N + 2> A1 = Matrix<T, N + 2, N + 2>::Zero();
     A1.template block<N, N>(0, 0) = A;
     A1.template block<N, 1>(0, N) = b;
-    A1.template block<N + 1, 1>(0, N + 1) = x1;
+    A1.template block<N + 1, 1>(0, N + 1) = x0;
     A1 *= step;
 
     // Vector z
-    Matrix<T, N + 2, 1> z = Matrix<T, N + 2, 1>::Zero();
-    z(N + 1, 0) = 1;
+    z1(N + 1, 0) = 1;
 
     // Matrix exponential and extracting the interesting result
-    expUtil2.computeExpTimesVector(A1, z, res2);
+    expUtil2.computeExpTimesVector(A1, z1, res2);
     out = res2.template block<N, 1>(0, 0);
 }
 
@@ -94,7 +111,6 @@ template <typename T, int N>
 void LDSUtility<T, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
     // Building aumented matrix A2
-    Matrix<T, N + 3, N + 3> A2 = Matrix<T, N + 3, N + 3>::Zero();
     A2.template block<N, N>(0, 0) = A;
     A2.template block<N, 1>(0, N) = b;
     A2.template block<N, 1>(0, N + 1) = xInit;
@@ -102,12 +118,11 @@ void LDSUtility<T, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVe
     A2 *= step;
 
     // Vector z
-    Matrix<T, N + 3, 1> z = Matrix<T, N + 3, 1>::Zero();
-    z(N + 2, 0) = 1;
+    z2(N + 2, 0) = 1;
 
     // Matrix exponential and extracting the interesting result
-    expUtil3.computeExpTimesVector(A2, z, res3);
-    out =  res3.template block<N, 1>(0, 0);
+    expUtil3.computeExpTimesVector(A2, z2, res3);
+    out = res3.template block<N, 1>(0, 0);
 }
 
 /*
@@ -136,7 +151,6 @@ private:
     // Preallocating useful stuff
     DynVector res1, res2, res3, x0, z1, z2;
     DynMatrix A0, A1, A2;
-    
 
 public:
     // Would like to forbid creation without specifying a size, but it would prevent use as a class field
@@ -205,7 +219,7 @@ template <typename T>
 void LDSUtility<T, Dynamic>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
     // Building aumented matrix A0
-    A0.block(0, 0, n, n) = A; 
+    A0.block(0, 0, n, n) = A;
     A0.block(0, n, n, 1) = b;
     A0 *= step;
 
@@ -241,7 +255,9 @@ void LDSUtility<T, Dynamic>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b,
     A2.block(0, 0, n, n) = A;
     A2.block(0, n, n, 1) = b;
     A2.block(0, n + 1, n, 1) = xInit;
-    A2.block(n, n + 1, 2, 2) = Matrix<T, 2, 2>::Identity();
+    //A2.block(n, n + 1, 2, 2) = Matrix<T, 2, 2>::Identity();
+    A2(n, n + 1) = 1;
+    A2(n + 1, n + 2) = 1;
     A2 *= step;
 
     // Matrix exponential and extracting the interesting result

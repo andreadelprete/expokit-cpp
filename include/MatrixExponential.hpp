@@ -31,7 +31,7 @@ private:
     // Typedefs to make code more readable
     typedef Matrix<T, N, 1> VectorType;
     typedef Matrix<T, N, N> MatrixType;
-    
+
     typedef const Ref<const VectorType> RefVector;
     typedef const Ref<const MatrixType> RefMatrix;
 
@@ -71,7 +71,6 @@ public:
      */
     void computeExpTimesVector(RefMatrix A, RefVector v, RefOutVector out, int vec_squarings = -1);
     //void computeExpTimesVector(RefVector v, , int vec_squarings = -1);
-
 
 private:
     void init(int n);
@@ -232,7 +231,7 @@ void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix A, RefVector v, Re
 
     //int two_pow_s = (int)std::pow(2, vec_squarings);
     unsigned int two_pow_s = 1U << (unsigned int)vec_squarings;
-    
+
     v_tmp = v;
     for (unsigned int i = 0; i < two_pow_s; i++) {
         out.noalias() = tmp * v_tmp;
@@ -285,8 +284,8 @@ void MatrixExponential<T, N>::matrix_exp_pade5(const RefMatrix& A)
     //    typedef typename NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
     const RealScalar b[] = { 30240., 15120., 3360., 420., 30., 1. };
-    A2 = A * A;
-    A4 = A2 * A2;
+    A2.noalias() = A * A;
+    A4.noalias() = A2 * A2;
     tmp = b[5] * A4 + b[3] * A2 + b[1] * eye;
     U.noalias() = A * tmp;
     V = b[4] * A4 + b[2] * A2 + b[0] * eye;
@@ -298,9 +297,9 @@ void MatrixExponential<T, N>::matrix_exp_pade7(const RefMatrix& A)
     //    typedef typename NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
     const RealScalar b[] = { 17297280., 8648640., 1995840., 277200., 25200., 1512., 56., 1. };
-    A2 = A * A;
-    A4 = A2 * A2;
-    A6 = A4 * A2;
+    A2.noalias() = A * A;
+    A4.noalias() = A2 * A2;
+    A6.noalias() = A4 * A2;
     tmp = b[7] * A6 + b[5] * A4 + b[3] * A2 + b[1] * eye;
     U.noalias() = A * tmp;
     V = b[6] * A6 + b[4] * A4 + b[2] * A2 + b[0] * eye;
@@ -313,10 +312,10 @@ void MatrixExponential<T, N>::matrix_exp_pade9(const RefMatrix& A)
     typedef double RealScalar;
     const RealScalar b[] = { 17643225600., 8821612800., 2075673600., 302702400., 30270240.,
         2162160., 110880., 3960., 90., 1. };
-    A2 = A * A;
-    A4 = A2 * A2;
-    A6 = A4 * A2;
-    A8 = A6 * A2;
+    A2.noalias() = A * A;
+    A4.noalias() = A2 * A2;
+    A6.noalias() = A4 * A2;
+    A8.noalias() = A6 * A2;
     tmp = b[9] * A8 + b[7] * A6 + b[5] * A4 + b[3] * A2 + b[1] * eye;
     U.noalias() = A * tmp;
     V = b[8] * A8 + b[6] * A6 + b[4] * A4 + b[2] * A2 + b[0] * eye;
@@ -330,26 +329,17 @@ void MatrixExponential<T, N>::matrix_exp_pade13(const RefMatrix& A)
     const RealScalar b[] = { 64764752532480000., 32382376266240000., 7771770303897600.,
         1187353796428800., 129060195264000., 10559470521600., 670442572800.,
         33522128640., 1323241920., 40840800., 960960., 16380., 182., 1. };
+    
     A2.noalias() = A * A;
     A4.noalias() = A2 * A2;
     A6.noalias() = A4 * A2;
-    V.noalias() = b[13] * A6;
-    V.noalias() += b[11] * A4;
-    V.noalias() += b[9] * A2; // used for temporary storage
+    V = b[13] * A6 + b[11] * A4 + b[9] * A2; // used for temporary storage
     tmp.noalias() = A6 * V;
-    tmp.noalias() += b[7] * A6;
-    tmp.noalias() += b[5] * A4;
-    tmp.noalias() += b[3] * A2;
-    tmp.noalias() += b[1] * eye;
+    tmp += b[7] * A6 + b[5] * A4 + b[3] * A2 + b[1] * eye; // this is a sum so no alias by default
     U.noalias() = A * tmp;
-    tmp.noalias() = b[12] * A6;
-    tmp.noalias() += b[10] * A4;
-    tmp.noalias() += b[8] * A2;
+    tmp = b[12] * A6 + b[10] * A4 + b[8] * A2;
     V.noalias() = A6 * tmp;
-    V.noalias() += b[6] * A6;
-    V.noalias() += b[4] * A4;
-    V.noalias() += b[2] * A2;
-    V.noalias() += b[0] * eye;
+    V += b[6] * A6 + b[4] * A4 + b[2] * A2 + b[0] * eye;
 }
 
 } // end namespace Eigen
