@@ -1,10 +1,20 @@
 # expokit-cpp
 
-Trying to make it compile with f2c requirement
+The goal of this library is to provide a fast and comprehensive solution for comuputing the matrix exponential in C++. The original library [expokit](http://fortranwiki.org/fortran/show/Expokit) was written in Fortran.
+Additionaly is provided an integration utility using this type of algebraic calculation.
 
-1.  Install f2c via apt
-2.  Add the followings to the env var `PKG_CONFIG_PATH`, according to your system, but stuff should match:
-    1. `/opt/openrobots/share/pkgconfig`
-    2. `/opt/openrobots/lib/pkgconfig`
-    3. `<any path sensible to you>`
-3.  Add the `f2c.pc` file to `<any path sensible to you>`
+## Dependecies
+1. `f2c` - used in porting routines from Fortran
+2. `eigen3` - Linear Algebra library
+3. `lapack` - Linear Algebra library
+
+## Build
+
+To compile expokit you need to provide to `pkg-conifg` the path both to `eigen3.pc` and `f2c.pc`. The location of the former depends on how `eigen3` was installed. We are assuming here it was installed from `robotpkg`. Regarding `f2c`, the current package provided by `apt` does not include the `f2c.pc` file, but we provide our own that can be found in this repo at `pkg-config/f2c.pc`. `lapack` dependecy should be resolved by the build system. Summing up your `PKG_CONFIG_PATH` should look like this:
+```
+export PKG_CONFIG_PATH=/opt/openrobots/lib/pkgconfig:$PKG_CONFIG_PATH
+export PKG_CONFIG_PATH=/opt/openrobots/share/pkgconfig:$PKG_CONFIG_PATH
+export PKG_CONFIG_PATH=<path to f2c.pc>:$PKG_CONFIG_PATH
+```
+Substitute `<path to f2c.pc>` with your path, it can be located anywhere really.
+
