@@ -29,4 +29,5 @@ ADD_TESTCASE(testIntegral     "eigen3")
 ADD_TESTCASE(testMatrixExpo   "eigen3")
 ADD_TESTCASE(testDyn  "eigen3")
 ADD_TESTCASE(testNoMalloc "eigen3")
+ADD_TESTCASE(testSoundness "eigen3")
 
