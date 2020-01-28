@@ -4,6 +4,7 @@
         "matrixd": "cpp",
         "matrixf": "cpp",
         "ref_ptr": "cpp",
-        "matrix": "cpp"
+        "matrix": "cpp",
+        "core": "cpp"
     },
 }

@@ -30,4 +30,6 @@ ADD_TESTCASE(testMatrixExpo   "eigen3")
 ADD_TESTCASE(testDyn  "eigen3")
 ADD_TESTCASE(testNoMalloc "eigen3")
 ADD_TESTCASE(testSoundness "eigen3")
+ADD_TESTCASE(testTSV "eigen3")
+
 
