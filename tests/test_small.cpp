@@ -10,16 +10,13 @@
 #include <list>
 #include <stdio.h>
 #include <string>
+
 #ifdef __cplusplus
 extern "C" {
-
 #include "clock.h"
 #include "dgchbv.h"
 #include "dgexpv.h"
 #include "dgpadm.h"
-
-// you need to define MAIN__ function because f2c complains if it doesn't find one
-int MAIN__() { return 0; }
 }
 #endif
 

@@ -20,6 +20,13 @@
 #include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
 #include "utils/stop-watch.h"
 
+#ifdef __cplusplus
+extern "C" {
+// you need to define MAIN__ function because f2c complains if it doesn't find one
+int MAIN__() { return 0; }
+}
+#endif
+
 using namespace Eigen;
 
 namespace expokit {
