@@ -5,6 +5,7 @@
         "matrixf": "cpp",
         "ref_ptr": "cpp",
         "matrix": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "cmath": "cpp"
     },
 }

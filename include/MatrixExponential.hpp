@@ -35,6 +35,9 @@ template <typename T, int N>
 class MatrixExponential {
 
 private:
+
+    int size;
+
     // Typedefs to make code more readable
     typedef Matrix<T, N, 1> VectorType;
     typedef Matrix<T, N, N> MatrixType;
@@ -51,16 +54,20 @@ private:
     PartialPivLU<MatrixType> ppLU;
     int squarings;
 
+    MatrixType prevEA, prevA, deltaA; // Used in delta update
+    bool delta;
+
 public:
     MatrixExponential();
     explicit MatrixExponential(int n);
 
     void resize(int n);
+    void resetDelta();
 
-    int get_squarings() const
-    {
-        return squarings;
-    }
+    int get_squarings() const { return squarings; }
+
+    void setDelta(bool delta) { this->delta = delta; }
+    bool getDelta() { return delta; }
 
     /** Compute the exponential of the given matrix arg and writes it in result.
      */
@@ -81,6 +88,8 @@ public:
 
 private:
     void init(int n);
+
+    int determineSquarings(const double l1norm);
 
     void computeUV(const RefMatrix& A);
 
@@ -141,6 +150,7 @@ MatrixExponential<T, N>::MatrixExponential(int n)
 template <typename T, int N>
 void MatrixExponential<T, N>::init(int n)
 {
+    size = n;
     U.resize(n, n);
     V.resize(n, n);
     numer.resize(n, n);
@@ -156,39 +166,58 @@ void MatrixExponential<T, N>::init(int n)
     ppLU = PartialPivLU<MatrixType>(n);
     v_tmp.resize(n);
     squarings = 0;
+    delta = false;
+    resetDelta();
 }
 
 template <typename T, int N>
 void MatrixExponential<T, N>::resize(int n)
 {
     init(n);
+    resetDelta();
+}
+
+template <typename T, int N>
+void MatrixExponential<T, N>::resetDelta() {
+    // Necessary to trigger full computation at the first call
+    prevA = MatrixType::Zero(size, size); 
+    prevEA = MatrixType::Identity(size, size);
 }
 
 template <typename T, int N>
 void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
 {
-    START_PROFILER("MatrixExponential::compute");
-    START_PROFILER("MatrixExponential::computeUV");
-    computeUV(A); // Pade approximant is (U+V) / (-U+V)
-    STOP_PROFILER("MatrixExponential::computeUV");
+    bool deltaUsed = false;
+    if (delta) {
+        deltaA = A - prevEA;
+        const double l1normA = A.cwiseAbs().colwise().sum().maxCoeff();
+        const double l1normDeltaA = deltaA.cwiseAbs().colwise().sum().maxCoeff();
+        // Speedup only if the difference in number of squaring is greater than 2
+        deltaUsed = determineSquarings(l1normA) - determineSquarings(l1normDeltaA) > 1;
+    } 
+    
+    if(deltaUsed)
+        computeUV(deltaA); 
+    else 
+        computeUV(A); // Pade approximant is (U+V) / (-U+V)
     numer = U + V;
     denom = -U + V;
-    START_PROFILER("MatrixExponential::computeLUdecomposition");
     ppLU.compute(denom);
-    STOP_PROFILER("MatrixExponential::computeLUdecomposition");
-    START_PROFILER("MatrixExponential::LUsolve");
     tmp = ppLU.solve(numer);
-    STOP_PROFILER("MatrixExponential::LUsolve");
 
     // undo scaling by repeated squaring
-    START_PROFILER("MatrixExponential::squaring");
     for (int i = 0; i < squarings; i++) {
         tmp2.noalias() = tmp * tmp;
         tmp = tmp2;
     }
-    STOP_PROFILER("MatrixExponential::squaring");
-    out = tmp;
-    STOP_PROFILER("MatrixExponential::compute");
+
+    if (deltaUsed) { // Saving result for next delta computation
+        out = prevEA * tmp;
+        prevA = A;
+        prevEA = tmp;
+    } else {
+        out = tmp;
+    }
 }
 
 template <typename T, int N>
@@ -249,15 +278,23 @@ void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix A, RefVector v, Re
 }
 
 template <typename T, int N>
+int MatrixExponential<T, N>::determineSquarings(const double l1norm)
+{
+    const double maxnorm = 5.371920351148152;
+    int squars;
+    std::frexp(l1norm / maxnorm, &squars);
+    if (squars < 0)
+        squars = 0;
+    return squars;
+}
+
+template <typename T, int N>
 void MatrixExponential<T, N>::computeUV(const RefMatrix& A)
 {
     const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
     squarings = 0;
     if (l1norm > 2.097847961257068e+000) {
-        const double maxnorm = 5.371920351148152;
-        std::frexp(l1norm / maxnorm, &squarings);
-        if (squarings < 0)
-            squarings = 0;
+        squarings = determineSquarings(l1norm);
         A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
         START_PROFILER("MatrixExponential::matrix_exp_pade13");
         matrix_exp_pade13(A_scaled);
@@ -336,7 +373,7 @@ void MatrixExponential<T, N>::matrix_exp_pade13(const RefMatrix& A)
     const RealScalar b[] = { 64764752532480000., 32382376266240000., 7771770303897600.,
         1187353796428800., 129060195264000., 10559470521600., 670442572800.,
         33522128640., 1323241920., 40840800., 960960., 16380., 182., 1. };
-    
+
     A2.noalias() = A * A;
     A4.noalias() = A2 * A2;
     A6.noalias() = A4 * A2;
