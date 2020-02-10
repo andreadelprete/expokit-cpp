@@ -3,14 +3,89 @@
 
 #include "LDSUtility.hpp"
 
+#include "utils/stop-watch.h"
+
 using namespace std;
 using namespace expokit;
 
 /*
     Testing delta optimization 
+    - General correctness - test against official implementation
+    - Speed against standard and official methods
 */
+
+#define MANY 100
+
+#define N 4
+#define M N * 3 * 2
 
 int main()
 {
-    
+    cout << "Start test delta update" << endl;
+
+    Matrix<double, M, M> res0, res1, res2;
+    int m2 = int(M / 2);
+    double stiffness = 1e5;
+    double damping = 1e2;
+    MatrixXd U = MatrixXd::Random(m2, m2);
+    MatrixXd Upsilon = U * U.transpose();
+    MatrixXd K = MatrixXd::Identity(m2, m2) * stiffness;
+    MatrixXd B = MatrixXd::Identity(m2, m2) * damping;
+    MatrixXd A = MatrixXd::Zero(M, M);
+    A.topRightCorner(m2, m2) = MatrixXd::Identity(m2, m2);
+    A.bottomLeftCorner(m2, m2) = -Upsilon * K;
+    A.bottomRightCorner(m2, m2) = -Upsilon * B;
+
+    array<MatrixXd, MANY> matrices{};
+
+    MatrixExponential<double, M> deltaOn;
+    deltaOn.useDelta(true);
+
+    MatrixExponential<double, M> deltaOff;
+
+    // Checking correctness
+    srand((unsigned int)time(NULL));
+    for (int i = 0; i < MANY; ++i) {
+        // Slightly changing matrix
+        double smallChange = (rand() % 100) / 100.0;
+        int index = rand() % 9;
+        int sign = rand();
+        if (sign % 2)
+            A(index) += smallChange;
+        else
+            A(index) -= smallChange;
+
+        // Saving matrice for later
+        matrices[i] = A;
+
+        // Computing using all three methods
+        START_PROFILER("testDelta::official");
+        res0 = A.exp();
+        STOP_PROFILER("testDelta::official");
+
+        START_PROFILER("testDelta::deltaOff");
+        deltaOff.compute(A, res1);
+        STOP_PROFILER("testDelta::deltaOff");
+
+        START_PROFILER("testDelta::deltaOn");
+        deltaOn.compute(A, res2);
+        STOP_PROFILER("testDelta::deltaOn");
+
+        if ((res0 - res1).eval().cwiseAbs().sum() > 0) {
+            cout << res0 - res1 << endl
+                 << i << endl;
+            return -1;
+        }
+
+        // if ((res0 - res2).eval().cwiseAbs().sum() > 100) {
+            // cout << res0 - res2 << endl
+            cout << (res0 - res2).eval().cwiseAbs().sum() << '\t'
+                 << (res0 - res2).eval().maxCoeff() << '\t'
+                 << deltaOn.wasDeltaUsed() << '\t'
+                 << i << endl;
+            // return -2;
+        // }
+    }
+
+    getProfiler().report_all(3);
 }

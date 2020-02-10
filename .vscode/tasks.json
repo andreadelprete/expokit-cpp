@@ -11,7 +11,7 @@
                 "-I/opt/openrobots/include/eigen3",
                 "-I/${fileDirname}/../include",
                 "-o",
-                "${fileDirname}/../build/debugVSC/${fileBasenameNoExtension}"
+                "${fileDirname}/../build/${fileBasenameNoExtension}"
             ],
             "options": {
                 "cwd": "/usr/bin"

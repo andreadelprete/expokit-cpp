@@ -39,6 +39,7 @@ ENDIF(WIN32)
 # ----------------------------------------------------
 
 ADD_DEFINITIONS(-DEIGEN_RUNTIME_NO_MALLOC)
+ADD_DEFINITIONS(-DPROFILERYES)
 
 # uncomment these lines to use LAPACK
 #SEARCH_FOR_LAPACK()

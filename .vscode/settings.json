@@ -6,6 +6,8 @@
         "ref_ptr": "cpp",
         "matrix": "cpp",
         "core": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "chrono": "cpp",
+        "complex": "cpp"
     },
 }
