@@ -13,12 +13,14 @@
 #define EIGEN_MALLOC_NOT_ALLOWED
 #endif
 
-#include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
-#include "utils/stop-watch.h"
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <iostream>
 #include <stdio.h>
+#include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
+#include "utils/stop-watch.h"
+
+#define MIN_SQUARINGS 10
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,6 +55,7 @@ private:
     PartialPivLU<MatrixType> ppLU;
     int squarings;
 
+    MatrixType metaProds[50]; // Should be enough to not check every time?
     MatrixType prevEA, prevA, deltaA; // Used in delta update
     bool delta, deltaUsed;
 
@@ -93,6 +96,8 @@ private:
     int determineSquarings(const double l1norm);
 
     void computeUV(const RefMatrix& A);
+    // Overloading that does not compute squarings inside
+    void computeUV(const RefMatrix& A, int squarings);
 
     /** \brief Compute the (3,3)-Pad&eacute; approximant to the exponential.
     *
@@ -188,37 +193,41 @@ template <typename T, int N>
 void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
 {
     deltaUsed = false;
+    int deltaSquarings;
     if (delta) {
         deltaA = A - prevA;
-        const double l1normA = A.cwiseAbs().colwise().sum().maxCoeff();
         const double l1normDeltaA = deltaA.cwiseAbs().colwise().sum().maxCoeff();
         // Speedup only if the difference in number of squaring is greater than 2
-        deltaUsed = determineSquarings(l1normA) - determineSquarings(l1normDeltaA) > 1;
+        deltaSquarings = determineSquarings(l1normDeltaA);
+
+        if (deltaSquarings < MIN_SQUARINGS)
+            deltaSquarings = MIN_SQUARINGS;
+
+        deltaUsed = squarings >= deltaSquarings;
     }
 
-    if (deltaUsed)
-        computeUV(deltaA);
-    else
+    if (deltaUsed) {
+        computeUV(deltaA, deltaSquarings);
+        numer = U + V;
+        denom = -U + V;
+        ppLU.compute(denom);
+        // There wuold be alias with squarings = 0, but it's not possible by logic
+        metaProds[0].noalias() = metaProds[squarings] * ppLU.solve(numer);
+    } else {
         computeUV(A); // Pade approximant is (U+V) / (-U+V)
-    numer = U + V;
-    denom = -U + V;
-    ppLU.compute(denom);
-    tmp = ppLU.solve(numer);
+        numer = U + V;
+        denom = -U + V;
+        ppLU.compute(denom);
+        metaProds[0] = ppLU.solve(numer);
+    }
 
     // undo scaling by repeated squaring
-    for (int i = 0; i < squarings; i++) {
-        tmp2.noalias() = tmp * tmp;
-        tmp = tmp2;
+    int i;
+    for (i = 1; i <= squarings; ++i) {
+        metaProds[i].noalias() = metaProds[i - 1] * metaProds[i - 1];
     }
 
-    if (deltaUsed) { // Saving result for next delta computation
-        out = prevEA * tmp;
-    } else {
-        out = tmp;
-    }
-
-    prevA = A;
-    prevEA = out;
+    out = metaProds[i - 1];
 }
 
 template <typename T, int N>
@@ -286,6 +295,26 @@ void MatrixExponential<T, N>::computeUV(const RefMatrix& A)
     squarings = 0;
     if (l1norm > 2.097847961257068e+000) {
         squarings = determineSquarings(l1norm);
+        A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
+        matrix_exp_pade13(A_scaled);
+    } else if (l1norm < 1.495585217958292e-002) {
+        matrix_exp_pade3(A);
+    } else if (l1norm < 2.539398330063230e-001) {
+        matrix_exp_pade5(A);
+    } else if (l1norm < 9.504178996162932e-001) {
+        matrix_exp_pade7(A);
+    } else {
+        matrix_exp_pade9(A);
+    }
+}
+
+template <typename T, int N>
+void MatrixExponential<T, N>::computeUV(const RefMatrix& A, int squarings)
+{
+    const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
+    this->squarings = 0;
+    if (l1norm > 2.097847961257068e+000) {
+        this->squarings = squarings;
         A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
         matrix_exp_pade13(A_scaled);
     } else if (l1norm < 1.495585217958292e-002) {

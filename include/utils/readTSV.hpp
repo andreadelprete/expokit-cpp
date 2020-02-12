@@ -28,7 +28,8 @@ vector<MatrixXd> readTSV(const char filename[], int rows, int cols, char delimit
             res->operator()(i % rows, i / rows) = stod(splitted);; // So ugly I can't even
             i++;
         }
-
+        if(cols != 1) // Only if it is a matrix. Ugly but works.
+            res->transposeInPlace();
         result.push_back(*res);
     }
 

@@ -3,6 +3,7 @@
 
 #include "LDSUtility.hpp"
 
+#include "utils/readTSV.hpp"
 #include "utils/stop-watch.h"
 
 using namespace std;
@@ -16,14 +17,18 @@ using namespace expokit;
 
 #define MANY 100
 
-#define N 4
+#define N 2
 #define M N * 3 * 2
 
-int main()
+int main(int argc, char *argv[])
 {
     cout << "Start test delta update" << endl;
 
+    // Used with test on simulation data
+    //vector<MatrixXd> vecA = readTSV("tests/logStuffA", M, M);
+
     Matrix<double, M, M> res0, res1, res2;
+
     int m2 = int(M / 2);
     double stiffness = 1e5;
     double damping = 1e2;
@@ -36,7 +41,7 @@ int main()
     A.bottomLeftCorner(m2, m2) = -Upsilon * K;
     A.bottomRightCorner(m2, m2) = -Upsilon * B;
 
-    array<MatrixXd, MANY> matrices{};
+    // array<MatrixXd, MANY> matrices{};
 
     MatrixExponential<double, M> deltaOn;
     deltaOn.useDelta(true);
@@ -45,18 +50,21 @@ int main()
 
     // Checking correctness
     srand((unsigned int)time(NULL));
-    for (int i = 0; i < MANY; ++i) {
-        // Slightly changing matrix
-        double smallChange = (rand() % 100) / 100.0;
-        int index = rand() % 9;
-        int sign = rand();
-        if (sign % 2)
-            A(index) += smallChange;
-        else
-            A(index) -= smallChange;
 
-        // Saving matrice for later
-        matrices[i] = A;
+    bool whichData = false;
+    for (int i = 0; i < MANY; ++i) {
+
+        if (whichData) {
+            //A = vecA[i];
+        } else {
+            double smallChange = (rand() % 100) / 100.0;
+            int index = rand() % 9;
+            int sign = rand();
+            if (sign % 2)
+                A(index) += smallChange;
+            else
+                A(index) -= smallChange;
+        }
 
         // Computing using all three methods
         START_PROFILER("testDelta::official");
@@ -73,19 +81,20 @@ int main()
 
         if ((res0 - res1).eval().cwiseAbs().sum() > 0) {
             cout << res0 - res1 << endl
-                 << i << endl;
+                 << i << endl
+                 << "ERROR IN STANDARD METHOD" << endl;
             return -1;
         }
 
         // if ((res0 - res2).eval().cwiseAbs().sum() > 100) {
-            // cout << res0 - res2 << endl
-            cout << (res0 - res2).eval().cwiseAbs().sum() << '\t'
-                 << (res0 - res2).eval().maxCoeff() << '\t'
-                 << deltaOn.wasDeltaUsed() << '\t'
-                 << i << endl;
-            // return -2;
+        // cout << res0 - res2 << endl
+        cout << round((res0 - res2).eval().cwiseAbs().sum() * 1000.0) / 1000.0 << '\t'
+             << round((res0 - res2).eval().maxCoeff() * 1000.0) / 1000.0 << '\t'
+             << deltaOn.wasDeltaUsed() << '\t'
+             << i << endl;
+        // return -2;
         // }
     }
 
-    getProfiler().report_all(3);
+    // getProfiler().report_all(3);
 }
