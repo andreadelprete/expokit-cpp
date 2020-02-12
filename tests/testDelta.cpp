@@ -17,7 +17,7 @@ using namespace expokit;
 
 #define MANY 100
 
-#define N 2
+#define N 4
 #define M N * 3 * 2
 
 int main(int argc, char *argv[])
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     cout << "Start test delta update" << endl;
 
     // Used with test on simulation data
-    //vector<MatrixXd> vecA = readTSV("tests/logStuffA", M, M);
+    vector<MatrixXd> vecA = readTSV("tests/logStuffA", M, M);
 
     Matrix<double, M, M> res0, res1, res2;
 
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     A.bottomLeftCorner(m2, m2) = -Upsilon * K;
     A.bottomRightCorner(m2, m2) = -Upsilon * B;
 
-    // array<MatrixXd, MANY> matrices{};
+    array<MatrixXd, MANY> matrices{};
 
     MatrixExponential<double, M> deltaOn;
     deltaOn.useDelta(true);
@@ -51,11 +51,11 @@ int main(int argc, char *argv[])
     // Checking correctness
     srand((unsigned int)time(NULL));
 
-    bool whichData = false;
+    bool whichData = true;
     for (int i = 0; i < MANY; ++i) {
 
         if (whichData) {
-            //A = vecA[i];
+            A = vecA[i];
         } else {
             double smallChange = (rand() % 100) / 100.0;
             int index = rand() % 9;
@@ -72,19 +72,19 @@ int main(int argc, char *argv[])
         STOP_PROFILER("testDelta::official");
 
         START_PROFILER("testDelta::deltaOff");
-        deltaOff.compute(A, res1);
+        // deltaOff.compute(A, res1);
         STOP_PROFILER("testDelta::deltaOff");
 
         START_PROFILER("testDelta::deltaOn");
         deltaOn.compute(A, res2);
         STOP_PROFILER("testDelta::deltaOn");
 
-        if ((res0 - res1).eval().cwiseAbs().sum() > 0) {
-            cout << res0 - res1 << endl
-                 << i << endl
-                 << "ERROR IN STANDARD METHOD" << endl;
-            return -1;
-        }
+        // if ((res0 - res1).eval().cwiseAbs().sum() > 0) {
+        //     cout << res0 - res1 << endl
+        //          << i << endl
+        //          << "ERROR IN STANDARD METHOD" << endl;
+        //     return -1;
+        // }
 
         // if ((res0 - res2).eval().cwiseAbs().sum() > 100) {
         // cout << res0 - res2 << endl

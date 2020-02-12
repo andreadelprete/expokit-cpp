@@ -13,14 +13,14 @@
 #define EIGEN_MALLOC_NOT_ALLOWED
 #endif
 
+#include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
+#include "utils/stop-watch.h"
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <iostream>
 #include <stdio.h>
-#include "unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h"
-#include "utils/stop-watch.h"
 
-#define MIN_SQUARINGS 10
+#define MIN_SQUARINGS 5
 
 #ifdef __cplusplus
 extern "C" {
@@ -203,7 +203,7 @@ void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
         if (deltaSquarings < MIN_SQUARINGS)
             deltaSquarings = MIN_SQUARINGS;
 
-        deltaUsed = squarings >= deltaSquarings;
+        deltaUsed = (squarings >= deltaSquarings);
     }
 
     if (deltaUsed) {
@@ -212,22 +212,22 @@ void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
         denom = -U + V;
         ppLU.compute(denom);
         // There wuold be alias with squarings = 0, but it's not possible by logic
-        metaProds[0].noalias() = metaProds[squarings] * ppLU.solve(numer);
+        metaProds[squarings].noalias() = metaProds[squarings] * ppLU.solve(numer);
     } else {
         computeUV(A); // Pade approximant is (U+V) / (-U+V)
         numer = U + V;
         denom = -U + V;
         ppLU.compute(denom);
-        metaProds[0] = ppLU.solve(numer);
+        metaProds[squarings] = ppLU.solve(numer);
     }
 
     // undo scaling by repeated squaring
-    int i;
-    for (i = 1; i <= squarings; ++i) {
-        metaProds[i].noalias() = metaProds[i - 1] * metaProds[i - 1];
+    for (int i = squarings; i > 0; --i) {
+        metaProds[i - 1].noalias() = metaProds[i] * metaProds[i];
     }
 
-    out = metaProds[i - 1];
+    out = metaProds[0];
+    prevA = A;
 }
 
 template <typename T, int N>
@@ -311,20 +311,19 @@ void MatrixExponential<T, N>::computeUV(const RefMatrix& A)
 template <typename T, int N>
 void MatrixExponential<T, N>::computeUV(const RefMatrix& A, int squarings)
 {
-    const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
-    this->squarings = 0;
+    this->squarings = squarings;
+    A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
+    const double l1norm = A_scaled.cwiseAbs().colwise().sum().maxCoeff();
     if (l1norm > 2.097847961257068e+000) {
-        this->squarings = squarings;
-        A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
         matrix_exp_pade13(A_scaled);
     } else if (l1norm < 1.495585217958292e-002) {
-        matrix_exp_pade3(A);
+        matrix_exp_pade3(A_scaled);
     } else if (l1norm < 2.539398330063230e-001) {
-        matrix_exp_pade5(A);
+        matrix_exp_pade5(A_scaled);
     } else if (l1norm < 9.504178996162932e-001) {
-        matrix_exp_pade7(A);
+        matrix_exp_pade7(A_scaled);
     } else {
-        matrix_exp_pade9(A);
+        matrix_exp_pade9(A_scaled);
     }
 }
 
