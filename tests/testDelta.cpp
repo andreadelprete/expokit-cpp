@@ -20,7 +20,7 @@ using namespace expokit;
 #define N 4
 #define M N * 3 * 2
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     cout << "Start test delta update" << endl;
 
@@ -72,29 +72,29 @@ int main(int argc, char *argv[])
         STOP_PROFILER("testDelta::official");
 
         START_PROFILER("testDelta::deltaOff");
-        // deltaOff.compute(A, res1);
+        deltaOff.compute(A, res1);
         STOP_PROFILER("testDelta::deltaOff");
 
         START_PROFILER("testDelta::deltaOn");
         deltaOn.compute(A, res2);
         STOP_PROFILER("testDelta::deltaOn");
 
-        // if ((res0 - res1).eval().cwiseAbs().sum() > 0) {
-        //     cout << res0 - res1 << endl
-        //          << i << endl
-        //          << "ERROR IN STANDARD METHOD" << endl;
-        //     return -1;
-        // }
+        if ((res0 - res1).eval().cwiseAbs().sum() > 0) {
+            cout << res0 - res1 << endl
+                 << i << endl
+                 << "ERROR IN STANDARD METHOD" << endl;
+            return -1;
+        }
 
-        // if ((res0 - res2).eval().cwiseAbs().sum() > 100) {
-        // cout << res0 - res2 << endl
-        cout << round((res0 - res2).eval().cwiseAbs().sum() * 1000.0) / 1000.0 << '\t'
-             << round((res0 - res2).eval().maxCoeff() * 1000.0) / 1000.0 << '\t'
-             << deltaOn.wasDeltaUsed() << '\t'
-             << i << endl;
-        // return -2;
-        // }
+        if ((res0 - res2).eval().cwiseAbs().sum() > 5) {
+            // cout << res0 - res2 << endl
+            cout << round((res0 - res2).eval().cwiseAbs().sum() * 1000.0) / 1000.0 << '\t'
+                 << round((res0 - res2).eval().maxCoeff() * 1000.0) / 1000.0 << '\t'
+                 << deltaOn.wasDeltaUsed() << '\t'
+                 << i << endl;
+            return -2;
+        }
     }
 
-    // getProfiler().report_all(3);
+    getProfiler().report_all(3);
 }

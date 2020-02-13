@@ -212,7 +212,7 @@ void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
         denom = -U + V;
         ppLU.compute(denom);
         // There wuold be alias with squarings = 0, but it's not possible by logic
-        metaProds[squarings].noalias() = metaProds[squarings] * ppLU.solve(numer);
+        metaProds[squarings] = metaProds[squarings] * ppLU.solve(numer);
     } else {
         computeUV(A); // Pade approximant is (U+V) / (-U+V)
         numer = U + V;
