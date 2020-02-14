@@ -186,7 +186,7 @@ int main(int argc, const char* argv[])
         PRINT_MATRIX(expA);
 
     /* Eigen OPTIMIZED Pade with scaling and squaring */
-    int max_squarings = 8; //*expUtil.get_squarings();
+    int max_squarings = 8; //*expUtil.getSquarings();
     for (int vec_squarings = 0; vec_squarings <= max_squarings; vec_squarings++) {
         VectorXd expA_e1(m);
         VectorXd e1 = VectorXd::Zero(m);
@@ -202,7 +202,7 @@ int main(int argc, const char* argv[])
 
         printf("\nWith Eigen computeExpTimesVector with vec_squarings=%d everything went fine:\n", vec_squarings);
         printf("run time = %.3f ms\n", 1e3 * (tac - tic) / n_tests);
-        printf("Number of squarings: %d\n", expUtil.get_squarings());
+        printf("Number of squarings: %d\n", expUtil.getSquarings());
         EIGEN_MALLOC_ALLOWED
         if (m <= MAX_PRINT_N)
             PRINT_VECTOR(expA_e1);
@@ -222,7 +222,7 @@ int main(int argc, const char* argv[])
 
         printf("\nWith Eigen OPTIMIZED everything went fine:\n");
         printf("run time = %.3f ms\n", 1e3 * (tac - tic) / n_tests);
-        printf("Number of squarings: %d\n", expUtil.get_squarings());
+        printf("Number of squarings: %d\n", expUtil.getSquarings());
         if (m <= MAX_PRINT_N)
             PRINT_MATRIX(expA_2);
     }

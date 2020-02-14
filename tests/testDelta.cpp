@@ -1,4 +1,5 @@
 #include <Eigen/Core>
+#include <cstdlib>
 #include <iostream>
 
 #include "LDSUtility.hpp"
@@ -20,6 +21,10 @@ using namespace expokit;
 #define N 4
 #define M N * 3 * 2
 
+/*
+    argv[0] - executable name
+    argv[1] - minSquarings
+*/
 int main(int argc, char* argv[])
 {
     cout << "Start test delta update" << endl;
@@ -45,6 +50,9 @@ int main(int argc, char* argv[])
 
     MatrixExponential<double, M> deltaOn;
     deltaOn.useDelta(true);
+    if (argc > 1)
+        deltaOn.setMinSquarings(atoi(argv[1]));
+    cout << "Min number of squarings: " << deltaOn.getMinSquarings() << endl;
 
     MatrixExponential<double, M> deltaOff;
 
@@ -86,14 +94,18 @@ int main(int argc, char* argv[])
             return -1;
         }
 
-        if ((res0 - res2).eval().cwiseAbs().sum() > 5) {
-            // cout << res0 - res2 << endl
-            cout << round((res0 - res2).eval().cwiseAbs().sum() * 1000.0) / 1000.0 << '\t'
-                 << round((res0 - res2).eval().maxCoeff() * 1000.0) / 1000.0 << '\t'
-                 << deltaOn.wasDeltaUsed() << '\t'
-                 << i << endl;
+        if ((res0 - res2).eval().cwiseAbs().sum() > 5) { // Arbitrary error threshold
+            cout << res0 - res1 << endl
+                 << i << endl
+                 << "ERROR IN DELTA METHOD" << endl;
             return -2;
         }
+
+        // Comment out to see detailed error output
+        // cout << round((res0 - res2).eval().cwiseAbs().sum() * 1000.0) / 1000.0 << '\t'
+        //      << round((res0 - res2).eval().maxCoeff() * 1000.0) / 1000.0 << '\t'
+        //      << deltaOn.wasDeltaUsed() << '\t'
+        //      << i << endl;
     }
 
     getProfiler().report_all(3);

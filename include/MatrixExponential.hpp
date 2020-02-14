@@ -20,8 +20,6 @@
 #include <iostream>
 #include <stdio.h>
 
-#define MIN_SQUARINGS 5
-
 #ifdef __cplusplus
 extern "C" {
 // you need to define MAIN__ function because f2c complains if it doesn't find one
@@ -56,8 +54,9 @@ private:
     int squarings;
 
     MatrixType metaProds[50]; // Should be enough to not check every time?
-    MatrixType prevEA, prevA, deltaA; // Used in delta update
+    MatrixType prevA, deltaA; // Used in delta update
     bool delta, deltaUsed;
+    int minSquarings; // Default is 10
 
 public:
     MatrixExponential();
@@ -66,12 +65,15 @@ public:
     void resize(int n);
     void resetDelta();
 
-    int get_squarings() const { return squarings; }
+    int getSquarings() const { return squarings; }
 
     void useDelta(bool delta) { this->delta = delta; }
     bool getDelta() { return delta; }
 
     bool wasDeltaUsed() { return deltaUsed; }
+
+    int getMinSquarings() { return minSquarings; }
+    void setMinSquarings(int minSquarings) { this->minSquarings = minSquarings; }
 
     /** Compute the exponential of the given matrix arg and writes it in result.
      */
@@ -170,6 +172,7 @@ void MatrixExponential<T, N>::init(int n)
     ppLU = PartialPivLU<MatrixType>(n);
     v_tmp.resize(n);
     squarings = 0;
+    minSquarings = 10;
     delta = false;
     resetDelta();
 }
@@ -186,7 +189,6 @@ void MatrixExponential<T, N>::resetDelta()
 {
     // Necessary to trigger full computation at the first call
     prevA = MatrixType::Zero(size, size);
-    prevEA = MatrixType::Identity(size, size);
 }
 
 template <typename T, int N>
@@ -200,8 +202,8 @@ void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
         // Speedup only if the difference in number of squaring is greater than 2
         deltaSquarings = determineSquarings(l1normDeltaA);
 
-        if (deltaSquarings < MIN_SQUARINGS)
-            deltaSquarings = MIN_SQUARINGS;
+        if (deltaSquarings < minSquarings)
+            deltaSquarings = minSquarings;
 
         deltaUsed = (squarings >= deltaSquarings);
     }
