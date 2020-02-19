@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 #include <iostream>
 
+#include "LDS2OrderUtility.hpp"
 #include "LDSUtility.hpp"
 #include "MatrixExponential.hpp"
 
@@ -15,44 +16,43 @@ using namespace expokit;
 void basicAssertion(const bool test, const char message[]);
 
 // Baseline precision implemented with vanilla Euler integration
-Vector3d ComputeXt(Matrix3d& A, Vector3d& b, Vector3d& xInit, double tFinal, double dt);
-Vector3d ComputeIntegralXt(Matrix3d& A, Vector3d& b, Vector3d& xInit, double tFinal, double dt);
-Vector3d ComputeDoubleIntegralXt(Matrix3d& A, Vector3d& b, Vector3d& xInit, double tFinal, double dt);
+Vector4d ComputeXt(Matrix4d& A, Vector4d& b, Vector4d& xInit, double tFinal, double dt);
+Vector4d ComputeIntegralXt(Matrix4d& A, Vector4d& b, Vector4d& xInit, double tFinal, double dt);
+Vector4d ComputeDoubleIntegralXt(Matrix4d& A, Vector4d& b, Vector4d& xInit, double tFinal, double dt);
 
 // Substitute with an assert when we will be able to make tests
 // Comparing with the eigen built in routine
+/*
+    TODO 
+    - THIS CHECKS ONLY STATIC CODE, EXTEND TO DYNAMIC
+*/
 int main()
 {
-
-    // Matrix exponential correctness
-    Matrix3d A, result;
-    A << -8, 1, -6, 3, -5, 7, -4, -9, 2;
-    Vector3d v, res1, res2;
-    v << 5, 6, 7;
-    MatrixExponential<double, 3> util;
-    Matrix3d Aref = A.exp();
-
-    util.compute(A, result);
-    basicAssertion(Aref.isApprox(result), "Matrix Compiute");
-
-    util.computeExpTimesVector(A, v, res1);
-    res2 = Aref * v;
-    basicAssertion(res1.isApprox(res2, PRECISION_EXP), "Matrix TimesVector");
+    Matrix4d A;
+    A << 0.263864065047873, 0.472731157423219, 0.122861379094837, 0.672122191028925,
+        0.00754540740531273, 0.438417287905947, 0.0645734168742309, 0.168649768409165,
+        0.313604584288928, 0.619345999198629, 0.0768998362137855, 0.539774473871385,
+        0.0104497380027225, 0.197138806124144, 0.242873531490832, 0.113272925826047;
+    Vector4d v, res1, res2, res3;
+    v << 5, 6, 7, 8;
 
     // Integration utility
-    LDSUtility<double, 3> lds;
-    Vector3d b, xInit;
-    b << 1, 2, 3;
-    xInit << 3, 2, 1;
+    LDSUtility<double, 4> lds;
+    LDS2OrderUtility<double, Dynamic> lds2(4);
+    Vector4d b, xInit;
+    b << 1, 2, 3, 4;
+    xInit << 4, 3, 2, 1;
 
     lds.ComputeXt(A, b, xInit, 5, res1);
+    lds2.ComputeXt(A, b, xInit, 5, res3);
     res2 = ComputeXt(A, b, xInit, 5, INT_STEP);
-    // cout << res1 - res2 << endl;
+    cout << res1 - res2 << endl;
     basicAssertion(res1.isApprox(res2, PRECISION_INT), "ComputeXt");
+    basicAssertion(res1.isApprox(res3, PRECISION_INT), "ComputeXtTimeScaling");
 
     lds.ComputeIntegralXt(A, b, xInit, 3, res1);
     res2 = ComputeIntegralXt(A, b, xInit, 3, INT_STEP);
-    // cout << res1 - res2 << endl;
+    cout << res1 - res2 << endl;
     basicAssertion(res1.isApprox(res2, PRECISION_INT), "ComputeIntegralXt");
 
     lds.ComputeDoubleIntegralXt(A, b, xInit, 2, res1);
@@ -71,10 +71,10 @@ void basicAssertion(const bool test, const char message[])
         cout << message << "\t\t\tFAIL" << endl;
 }
 
-Vector3d ComputeXt(Matrix3d& A, Vector3d& b, Vector3d& xInit, double tFinal, double dt)
+Vector4d ComputeXt(Matrix4d& A, Vector4d& b, Vector4d& xInit, double tFinal, double dt)
 {
     int steps = (int)(tFinal / dt);
-    Vector3d result = xInit;
+    Vector4d result = xInit;
     for (int s = 0; s < steps; s++) {
         result += (A * result + b) * dt;
     }
@@ -82,16 +82,16 @@ Vector3d ComputeXt(Matrix3d& A, Vector3d& b, Vector3d& xInit, double tFinal, dou
     return result;
 }
 
-Vector3d ComputeIntegralXt(Matrix3d& A, Vector3d& b, Vector3d& xInit, double tFinal, double dt)
+Vector4d ComputeIntegralXt(Matrix4d& A, Vector4d& b, Vector4d& xInit, double tFinal, double dt)
 {
     int steps = (int)(tFinal / dt);
-    // Vector3d result = Vector3d::Zero();
+    // Vector4d result = Vector4d::Zero();
     // for (int s = 0; s < steps; s++) {
     //     result += ComputeXt(A, b, xInit, dt * s, dt) * dt;
     // }
 
-    Vector3d result = Vector3d::Zero();
-    Vector3d dx = xInit;
+    Vector4d result = Vector4d::Zero();
+    Vector4d dx = xInit;
     for (int s = 0; s < steps; s++) {
         dx = ComputeXt(A, b, dx, dt, dt * INT_STEP);
         result += dx * dt;
@@ -100,10 +100,10 @@ Vector3d ComputeIntegralXt(Matrix3d& A, Vector3d& b, Vector3d& xInit, double tFi
     return result;
 }
 
-Vector3d ComputeDoubleIntegralXt(Matrix3d& A, Vector3d& b, Vector3d& xInit, double tFinal, double dt)
+Vector4d ComputeDoubleIntegralXt(Matrix4d& A, Vector4d& b, Vector4d& xInit, double tFinal, double dt)
 {
     int steps = (int)(tFinal / dt);
-    Vector3d result = Vector3d::Zero();
+    Vector4d result = Vector4d::Zero();
     for (int s = 0; s < steps; s++) {
         result += ComputeIntegralXt(A, b, xInit, dt * s, dt) * dt;
     }
