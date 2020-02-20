@@ -158,12 +158,13 @@ private:
 
     int n, nHalf;
     T scalingT; // Just for debug purposes - should be local variable
+    T scalingSqrd;
 
     typedef Matrix<T, Dynamic, 1> DynVector;
     typedef Matrix<T, Dynamic, Dynamic> DynMatrix;
 
     // Preallocating useful stuff
-    DynVector res1, res2, res3, x0, z1, z2;
+    DynVector res1, res2, res3, x0, z1, z2, mulXInit;
     DynMatrix A, A0, A1, A2;
 
 public:
@@ -184,24 +185,21 @@ public:
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
-    void ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out);
     void ComputeXt(RefMatrix& Kbar, RefMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out);
 
     /**
      * Compute the value of the integral of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
-    void ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out);
     void ComputeIntegralXt(RefMatrix& Kbar, RefMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out);
 
     /**
      * Compute the value of the double integral of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
-    void ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out);
     void ComputeDoubleIntegralXt(RefMatrix& Kbar, RefMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out);
 
 private:
-    inline void setScaling(RefMatrix& Kbar);
-    inline void composeA(RefMatrix& Kbar, RefMatrix& Bbar);
+    void setScaling(RefMatrix& Kbar);
+    void composeA(RefMatrix& Kbar, RefMatrix& Bbar);
 };
 
 template <typename T>
@@ -215,9 +213,6 @@ void LDS2OrderUtility<T, Dynamic>::resize(int n)
 {
     this->n = n;
     this->nHalf = n / 2;
-    // expUtil1.resize(n + 1);
-    // expUtil2.resize(n + 2);
-    // expUtil3.resize(n + 3);
     firstOrder.resize(n);
 
     // Common
@@ -240,71 +235,58 @@ void LDS2OrderUtility<T, Dynamic>::resize(int n)
     A2 = DynMatrix::Zero(n + 3, n + 3);
     z2 = DynVector::Zero(n + 3, 1);
     z2(n + 2, 0) = 1;
+    mulXInit = DynVector::Ones(n, 1);
 }
 
 // Just to avoid repetition
 template <typename T>
-void LDS2OrderUtility<T, Dynamic>::setScaling(RefMatrix& Kbar)
+inline void LDS2OrderUtility<T, Dynamic>::setScaling(RefMatrix& Kbar)
 {
-    const double l1norm = Kbar.block(nHalf, 0, nHalf, nHalf).cwiseAbs().colwise().sum().maxCoeff();
+    const double l1norm = Kbar.cwiseAbs().colwise().sum().maxCoeff();
     scalingT = sqrt(1 / l1norm);
+    scalingSqrd = scalingT * scalingT;
 }
 
 template <typename T>
-void LDS2OrderUtility<T, Dynamic>::composeA(RefMatrix& Kbar, RefMatrix& Bbar)
+inline void LDS2OrderUtility<T, Dynamic>::composeA(RefMatrix& Kbar, RefMatrix& Bbar)
 {
-    
+    A.block(nHalf, nHalf, nHalf, nHalf) = Bbar * -scalingT;
+    A.block(nHalf, 0, nHalf, nHalf) = Kbar * -scalingSqrd;
 }
 
 // ComputeXt
-template <typename T>
-void LDS2OrderUtility<T, Dynamic>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
-{
-    ComputeXt(A.block(nHalf, 0, nHalf, nHalf), A.block(nHalf, nHalf, nHalf, nHalf), b, xInit, step, out);
-}
 template <typename T>
 void LDS2OrderUtility<T, Dynamic>::ComputeXt(RefMatrix& Kbar, RefMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
     setScaling(Kbar);
 
-    A.block(nHalf, nHalf, nHalf, nHalf) = Bbar * -scalingT;
-    A.block(nHalf, 0, nHalf, nHalf) = Kbar * -(scalingT * scalingT);
+    composeA(Kbar, Bbar);
 
     firstOrder.ComputeXt(A, b, xInit, step / scalingT, out);
 }
 
 // ComputeIntegralXt
 template <typename T>
-void LDS2OrderUtility<T, Dynamic>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
-{
-    ComputeIntegralXt(A.block(nHalf, 0, nHalf, nHalf), A.block(nHalf, nHalf, nHalf, nHalf), b, xInit, step, out);
-}
-template <typename T>
 void LDS2OrderUtility<T, Dynamic>::ComputeIntegralXt(RefMatrix& Kbar, RefMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
     setScaling(Kbar);
 
-    A.block(nHalf, nHalf, nHalf, nHalf) = Bbar * -scalingT;
-    A.block(nHalf, 0, nHalf, nHalf) = Kbar * -(scalingT * scalingT);
+    composeA(Kbar, Bbar);
 
-    firstOrder.ComputeXt(A, b, xInit, step / scalingT, out);
+    firstOrder.ComputeXt(A, b * scalingSqrd, xInit, step / scalingT, out);
 }
 
 // ComputeDoubleIntegralXt
-template <typename T>
-void LDS2OrderUtility<T, Dynamic>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
-{
-    ComputeDoubleIntegralXt(A.block(nHalf, 0, nHalf, nHalf), A.block(nHalf, nHalf, nHalf, nHalf), b, xInit, step, out);
-}
 template <typename T>
 void LDS2OrderUtility<T, Dynamic>::ComputeDoubleIntegralXt(RefMatrix& Kbar, RefMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
     setScaling(Kbar);
 
-    A.block(nHalf, nHalf, nHalf, nHalf) = Bbar * -scalingT;
-    A.block(nHalf, 0, nHalf, nHalf) = Kbar * -(scalingT * scalingT);
+    composeA(Kbar, Bbar);
 
-    firstOrder.ComputeXt(A, b, xInit, step / scalingT, out);
+    mulXInit.block(nHalf, 0, nHalf, 1) = scalingT * xInit.block(nHalf, 0, nHalf, 1);
+
+    firstOrder.ComputeXt(A, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
 }
 }
 

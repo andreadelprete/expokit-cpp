@@ -9,11 +9,10 @@ using namespace std;
 using namespace expokit;
 
 #define INT_STEP 0.01
-#define PRECISION_EXP 0.001
-#define PRECISION_INT 0.01
+#define PRECISION_INT 0.05
 
 // Prompt facilitator
-void basicAssertion(const bool test, const char message[]);
+bool basicAssertion(const bool test, const char message[]);
 
 // Baseline precision implemented with vanilla Euler integration
 Vector4d ComputeXt(Matrix4d& A, Vector4d& b, Vector4d& xInit, double tFinal, double dt);
@@ -22,53 +21,94 @@ Vector4d ComputeDoubleIntegralXt(Matrix4d& A, Vector4d& b, Vector4d& xInit, doub
 
 // Substitute with an assert when we will be able to make tests
 // Comparing with the eigen built in routine
-/*
-    TODO 
-    - THIS CHECKS ONLY STATIC CODE, EXTEND TO DYNAMIC
-*/
 int main()
 {
-    Matrix4d A;
-    A << 0.263864065047873, 0.472731157423219, 0.122861379094837, 0.672122191028925,
-        0.00754540740531273, 0.438417287905947, 0.0645734168742309, 0.168649768409165,
-        0.313604584288928, 0.619345999198629, 0.0768998362137855, 0.539774473871385,
-        0.0104497380027225, 0.197138806124144, 0.242873531490832, 0.113272925826047;
-    Vector4d v, res1, res2, res3;
+    bool flag = true;
+
+    double stiffness = 10;
+    double damping = 1;
+    Matrix2d U = Matrix2d::Random();
+    Matrix2d Upsilon = U * U.transpose();
+    Matrix2d K = Matrix2d::Identity() * stiffness;
+    Matrix2d B = Matrix2d::Identity() * damping;
+    Matrix4d A = Matrix4d::Zero();
+    A.topRightCorner(2, 2) = Matrix2d::Identity();
+    A.bottomLeftCorner(2, 2) = -Upsilon * K;
+    A.bottomRightCorner(2, 2) = -Upsilon * B;
+    Vector4d v, ref, res;
     v << 5, 6, 7, 8;
 
     // Integration utility
-    LDSUtility<double, 4> lds;
-    LDS2OrderUtility<double, Dynamic> lds2(4);
+    LDSUtility<double, 4> ldsStatic;
+    LDSUtility<double, Dynamic> ldsDynamic(4);
+
+    LDS2OrderUtility<double, 4> lds2Static;
+    LDS2OrderUtility<double, Dynamic> lds2Dynamic(4);
     Vector4d b, xInit;
     b << 1, 2, 3, 4;
+    b *= 0.1;
     xInit << 4, 3, 2, 1;
+    xInit *= 0.1;
 
-    lds.ComputeXt(A, b, xInit, 5, res1);
-    lds2.ComputeXt(A, b, xInit, 5, res3);
-    res2 = ComputeXt(A, b, xInit, 5, INT_STEP);
-    cout << res1 - res2 << endl;
-    basicAssertion(res1.isApprox(res2, PRECISION_INT), "ComputeXt");
-    basicAssertion(res1.isApprox(res3, PRECISION_INT), "ComputeXtTimeScaling");
+    // ComputeXt
+    ref = ComputeXt(A, b, xInit, 1, INT_STEP);
 
-    lds.ComputeIntegralXt(A, b, xInit, 3, res1);
-    res2 = ComputeIntegralXt(A, b, xInit, 3, INT_STEP);
-    cout << res1 - res2 << endl;
-    basicAssertion(res1.isApprox(res2, PRECISION_INT), "ComputeIntegralXt");
+    ldsStatic.ComputeXt(A, b, xInit, 1, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Sta ComputeXt");
 
-    lds.ComputeDoubleIntegralXt(A, b, xInit, 2, res1);
-    res2 = ComputeDoubleIntegralXt(A, b, xInit, 2, INT_STEP);
-    // cout << res1 - res2 << endl;
-    basicAssertion(res1.isApprox(res2, PRECISION_INT), "ComputeDoubleIntegralXt");
+    ldsDynamic.ComputeXt(A, b, xInit, 1, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeXt");
 
-    return 0;
+    lds2Static.ComputeXt(A, b, xInit, 1, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Sta ComputeXt TS");
+
+    lds2Dynamic.ComputeXt(A.block(2, 0, 2, 2), A.block(2, 2, 2, 2), b, xInit, 5, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeXt TS");
+    cout << ref - res << endl;
+
+    // ComputeIntegralXt
+    ref = ComputeIntegralXt(A, b, xInit, 3, INT_STEP);
+
+    ldsStatic.ComputeIntegralXt(A, b, xInit, 3, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Sta ComputeIntegralXt");
+
+    ldsDynamic.ComputeIntegralXt(A, b, xInit, 3, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeIntegralXt");
+
+    lds2Static.ComputeIntegralXt(A, b, xInit, 3, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Sta ComputeIntegralXt TS");
+
+    lds2Dynamic.ComputeIntegralXt(A.block(2, 0, 2, 2), A.block(2, 2, 2, 2), b, xInit, 3, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeIntegralXt TS");
+    cout << ref - res << endl;
+
+    // ComputeDoubleIntegralXt
+    ref = ComputeDoubleIntegralXt(A, b, xInit, 2, INT_STEP);
+
+    ldsStatic.ComputeDoubleIntegralXt(A, b, xInit, 2, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Sta ComputeDoubleIntegralXt");
+
+    ldsDynamic.ComputeDoubleIntegralXt(A, b, xInit, 2, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeDoubleIntegralXt");
+
+    lds2Static.ComputeDoubleIntegralXt(A, b, xInit, 2, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Sta ComputeDoubleIntegralXt TS");
+
+    lds2Dynamic.ComputeDoubleIntegralXt(A.block(2, 0, 2, 2), A.block(2, 2, 2, 2), b, xInit, 2, res);
+    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeDoubleIntegralXt TS");
+    cout << ref - res << endl;
+
+    return !flag;
 }
 
-void basicAssertion(const bool test, const char message[])
+bool basicAssertion(const bool test, const char message[])
 {
     if (test)
         cout << message << "\t\t\tOK" << endl;
     else
         cout << message << "\t\t\tFAIL" << endl;
+
+    return test;
 }
 
 Vector4d ComputeXt(Matrix4d& A, Vector4d& b, Vector4d& xInit, double tFinal, double dt)
