@@ -1,9 +1,10 @@
 #ifndef INTEGRAL_UTILITY2
 #define INTEGRAL_UTILITY2
 
-#include "LDSUtility.hpp"
 #include <Eigen/Core>
 #include <iostream>
+#include "LDSUtility.hpp"
+
 
 using namespace Eigen;
 using namespace std;
@@ -32,7 +33,7 @@ private:
     Matrix<T, N + 2, 1> res2;
     Matrix<T, N + 3, 1> res3;
 
-    Matrix<T, N, N> A;
+    Matrix<T, N, N> As;
 
     Matrix<T, N + 1, N + 1> A0;
     Matrix<T, N + 1, 1> x0;
@@ -165,7 +166,7 @@ private:
 
     // Preallocating useful stuff
     DynVector res1, res2, res3, x0, z1, z2, mulXInit;
-    DynMatrix A, A0, A1, A2;
+    DynMatrix As, A0, A1, A2;
 
 public:
     // Would like to forbid creation without specifying a size, but it would prevent use as a class field
@@ -216,8 +217,8 @@ void LDS2OrderUtility<T, Dynamic>::resize(int n)
     firstOrder.resize(n);
 
     // Common
-    A = DynMatrix::Zero(n, n);
-    A.block(0, nHalf, nHalf, nHalf) = DynMatrix::Identity(nHalf, nHalf);
+    As = DynMatrix::Zero(n, n);
+    As.block(0, nHalf, nHalf, nHalf) = DynMatrix::Identity(nHalf, nHalf);
 
     // Stuff for ComputeXt
     res1.resize(n + 1, 1);
@@ -235,7 +236,6 @@ void LDS2OrderUtility<T, Dynamic>::resize(int n)
     A2 = DynMatrix::Zero(n + 3, n + 3);
     z2 = DynVector::Zero(n + 3, 1);
     z2(n + 2, 0) = 1;
-    mulXInit = DynVector::Ones(n, 1);
 }
 
 // Just to avoid repetition
@@ -245,13 +245,16 @@ inline void LDS2OrderUtility<T, Dynamic>::setScaling(RefMatrix& Kbar)
     const double l1norm = Kbar.cwiseAbs().colwise().sum().maxCoeff();
     scalingT = sqrt(1 / l1norm);
     scalingSqrd = scalingT * scalingT;
+
+    mulXInit = DynVector::Ones(n, 1);
+    mulXInit.block(nHalf, 0, nHalf, 1) = scalingT * mulXInit.block(nHalf, 0, nHalf, 1);
 }
 
 template <typename T>
 inline void LDS2OrderUtility<T, Dynamic>::composeA(RefMatrix& Kbar, RefMatrix& Bbar)
 {
-    A.block(nHalf, nHalf, nHalf, nHalf) = Bbar * -scalingT;
-    A.block(nHalf, 0, nHalf, nHalf) = Kbar * -scalingSqrd;
+    As.block(nHalf, nHalf, nHalf, nHalf) = Bbar * -scalingT;
+    As.block(nHalf, 0, nHalf, nHalf) = Kbar * -scalingSqrd;
 }
 
 // ComputeXt
@@ -262,7 +265,7 @@ void LDS2OrderUtility<T, Dynamic>::ComputeXt(RefMatrix& Kbar, RefMatrix& Bbar, R
 
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeXt(A, b, xInit, step / scalingT, out);
+    firstOrder.ComputeXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
 }
 
 // ComputeIntegralXt
@@ -273,7 +276,7 @@ void LDS2OrderUtility<T, Dynamic>::ComputeIntegralXt(RefMatrix& Kbar, RefMatrix&
 
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeXt(A, b * scalingSqrd, xInit, step / scalingT, out);
+    firstOrder.ComputeIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
 }
 
 // ComputeDoubleIntegralXt
@@ -284,9 +287,7 @@ void LDS2OrderUtility<T, Dynamic>::ComputeDoubleIntegralXt(RefMatrix& Kbar, RefM
 
     composeA(Kbar, Bbar);
 
-    mulXInit.block(nHalf, 0, nHalf, 1) = scalingT * xInit.block(nHalf, 0, nHalf, 1);
-
-    firstOrder.ComputeXt(A, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
+    firstOrder.ComputeDoubleIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
 }
 }
 
