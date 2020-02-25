@@ -9,7 +9,7 @@ using namespace std;
 using namespace expokit;
 
 #define INT_STEP 0.01
-#define PRECISION_INT 0.05
+#define PRECISION_INT 0.1
 
 // Prompt facilitator
 bool basicAssertion(const bool test, const char message[]);
@@ -35,6 +35,9 @@ int main()
     A.topRightCorner(2, 2) = Matrix2d::Identity();
     A.bottomLeftCorner(2, 2) = -Upsilon * K;
     A.bottomRightCorner(2, 2) = -Upsilon * B;
+    
+    A << 0,0,1,0,0,0,0,1,10,0,2,0,0,10,0,2;
+    
     Vector4d v, ref, res;
     v << 5, 6, 7, 8;
 
@@ -64,14 +67,12 @@ int main()
 
     lds2Dynamic.ComputeXt(A.block(2, 0, 2, 2), A.block(2, 2, 2, 2), b, xInit, 1, res);
     flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeXt TS");
-    cout << ref - res << endl;
 
     // ComputeIntegralXt
     ref = ComputeIntegralXt(A, b, xInit, 3, INT_STEP);
 
     ldsStatic.ComputeIntegralXt(A, b, xInit, 3, res);
     flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Sta ComputeIntegralXt");
-
     ldsDynamic.ComputeIntegralXt(A, b, xInit, 3, res);
     flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeIntegralXt");
 
@@ -80,7 +81,6 @@ int main()
 
     lds2Dynamic.ComputeIntegralXt(A.block(2, 0, 2, 2), A.block(2, 2, 2, 2), b, xInit, 3, res);
     flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeIntegralXt TS");
-    cout << ref - res << endl;
 
     // ComputeDoubleIntegralXt
     ref = ComputeDoubleIntegralXt(A, b, xInit, 2, INT_STEP);
@@ -96,7 +96,7 @@ int main()
 
     lds2Dynamic.ComputeDoubleIntegralXt(A.block(2, 0, 2, 2), A.block(2, 2, 2, 2), b, xInit, 2, res);
     flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeDoubleIntegralXt TS");
-    cout << ref - res << endl;
+    // cout << ref - res << endl;
 
     return !flag;
 }

@@ -15,6 +15,15 @@ namespace expokit {
     Utility class that allows integrating a system with the form
     Ax + b using a matrix exponential method 
 */
+
+/*
+             _____ _        _   _      
+            /  ___| |      | | (_)     
+            \ `--.| |_ __ _| |_ _  ___ 
+             `--. \ __/ _` | __| |/ __|
+            /\__/ / || (_| | |_| | (__ 
+            \____/ \__\__,_|\__|_|\___|
+*/
 template <typename T, int N>
 class LDSUtility {
 private:
@@ -37,13 +46,16 @@ private:
 
     Matrix<T, N + 3, 1> z2;
 
+    typedef Matrix<T, N, 1> StaVector;
+    typedef Matrix<T, N, N> StaMatrix;
+
+    typedef const Ref<const StaVector> RefVector;
+    typedef const Ref<const StaMatrix> RefMatrix;
+
+    typedef Ref<StaVector> RefOutVector;
+
 public:
     LDSUtility();
-
-    typedef const Ref<const Matrix<T, N, 1>> RefVector;
-    typedef const Ref<const Matrix<T, N, N>> RefMatrix;
-
-    typedef Ref<Matrix<T, N, 1>> RefOutVector;
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -148,6 +160,11 @@ private:
     typedef Matrix<T, Dynamic, 1> DynVector;
     typedef Matrix<T, Dynamic, Dynamic> DynMatrix;
 
+    typedef const Ref<const DynVector> RefVector;
+    typedef const Ref<const DynMatrix> RefMatrix;
+
+    typedef Ref<DynVector> RefOutVector;
+
     // Preallocating useful stuff
     DynVector res1, res2, res3, x0, z1, z2;
     DynMatrix A0, A1, A2;
@@ -161,11 +178,6 @@ public:
     LDSUtility(int n);
 
     void resize(int n);
-
-    typedef const Ref<const DynVector> RefVector;
-    typedef const Ref<const DynMatrix> RefMatrix;
-
-    typedef Ref<DynVector> RefOutVector;
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b

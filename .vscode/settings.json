@@ -68,6 +68,7 @@
         "random": "cpp",
         "typeinfo": "cpp",
         "config": "cpp",
-        "export": "cpp"
+        "export": "cpp",
+        "ostream": "cpp"
     },
 }
