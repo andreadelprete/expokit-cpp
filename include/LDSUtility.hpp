@@ -5,7 +5,6 @@
 #include <iostream>
 #include "MatrixExponential.hpp"
 
-
 using namespace Eigen;
 using namespace std;
 
@@ -57,6 +56,9 @@ private:
 public:
     LDSUtility();
 
+    void useDelta(bool yesOrNo);
+    bool isDeltaUsed();
+
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
@@ -81,6 +83,20 @@ LDSUtility<T, N>::LDSUtility()
     z1 = Matrix<T, N + 2, 1>::Zero();
     A2 = Matrix<T, N + 3, N + 3>::Zero();
     z2 = Matrix<T, N + 3, 1>::Zero();
+}
+
+template <typename T, int N>
+void LDSUtility<T, N>::useDelta(bool yesOrNo)
+{
+    expUtil1.useDelta(yesOrNo);
+    expUtil2.useDelta(yesOrNo);
+    expUtil3.useDelta(yesOrNo);
+}
+
+template <typename T, int N>
+bool LDSUtility<T, N>::isDeltaUsed()
+{
+    return expUtil1.getDelta();
 }
 
 template <typename T, int N>
@@ -177,6 +193,9 @@ public:
     } // Creating with dim 2
     LDSUtility(int n);
 
+    void useDelta(bool yesOrNo);
+    bool isDeltaUsed();
+
     void resize(int n);
 
     /**
@@ -199,6 +218,20 @@ template <typename T>
 LDSUtility<T, Dynamic>::LDSUtility(int n)
 {
     resize(n);
+}
+
+template <typename T>
+void LDSUtility<T, Dynamic>::useDelta(bool yesOrNo)
+{
+    expUtil1.useDelta(yesOrNo);
+    expUtil2.useDelta(yesOrNo);
+    expUtil3.useDelta(yesOrNo);
+}
+
+template <typename T>
+bool LDSUtility<T, Dynamic>::isDeltaUsed()
+{
+    return expUtil1.getDelta();
 }
 
 template <typename T>

@@ -54,6 +54,9 @@ private:
 public:
     LDS2OrderUtility();
 
+    void useDelta(bool yesOrNo);
+    bool isDeltaUsed();
+
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
@@ -82,6 +85,18 @@ LDS2OrderUtility<T, N>::LDS2OrderUtility()
 {
     As = StaMatrix::Zero();
     As.template block<NHalf, NHalf>(0, NHalf) = SubStaMatrix::Identity();
+}
+
+template <typename T, int N>
+void LDS2OrderUtility<T, N>::useDelta(bool yesOrNo)
+{
+    firstOrder.useDelta(yesOrNo);
+}
+
+template <typename T, int N>
+bool LDS2OrderUtility<T, N>::isDeltaUsed()
+{
+    return firstOrder.getDelta();
 }
 
 // Just to avoid repetition
@@ -206,6 +221,9 @@ public:
     } // Creating with dim 2
     LDS2OrderUtility(int n);
 
+    void useDelta(bool yesOrNo);
+    bool isDeltaUsed();
+
     void resize(int n);
 
     /**
@@ -235,6 +253,18 @@ template <typename T>
 LDS2OrderUtility<T, Dynamic>::LDS2OrderUtility(int n)
 {
     resize(n);
+}
+
+template <typename T>
+void LDS2OrderUtility<T, Dynamic>::useDelta(bool yesOrNo)
+{
+    firstOrder.useDelta(yesOrNo);
+}
+
+template <typename T>
+bool LDS2OrderUtility<T, Dynamic>::isDeltaUsed()
+{
+    return firstOrder.getDelta();
 }
 
 template <typename T>
