@@ -34,17 +34,22 @@ class LDS2OrderUtility {
 private:
     LDSUtility<T, N> firstOrder;
 
-    Matrix<T, N, 1> mulXInit, tempOut;
-    Matrix<T, N, N> As, outScaler;
+    typedef Matrix<T, N, 1> StaVector;
+    typedef Matrix<T, N, N> StaMatrix;
+    typedef Matrix<T, NHalf, NHalf> SubStaMatrix;
+
+    StaVector mulXInit;
+    StaMatrix As;
 
     T scalingT;
     T scalingSqrd;
 
-    typedef const Ref<const Matrix<T, N, 1>> RefVector;
-    typedef const Ref<const Matrix<T, N, N>> RefMatrix;
-    typedef const Ref<const Matrix<T, NHalf, NHalf>> RefSubMatrix;
+    typedef const Ref<const StaVector> RefVector;
+    typedef const Ref<const StaMatrix> RefMatrix;
 
-    typedef Ref<Matrix<T, N, 1>> RefOutVector;
+    typedef Ref<StaVector> RefOutVector;
+
+    typedef const Ref<const SubStaMatrix> RefSubMatrix;
 
 public:
     LDS2OrderUtility();
@@ -75,63 +80,66 @@ private:
 template <typename T, int N>
 LDS2OrderUtility<T, N>::LDS2OrderUtility()
 {
-    As = Matrix<T, N, N>::Zero();
-    As.template block<NHalf, NHalf>(0, NHalf) = Matrix<T, NHalf, NHalf>::Identity();
-
-    outScaler = Matrix<T, N, N>::Zero();
+    As = StaMatrix::Zero();
+    As.template block<NHalf, NHalf>(0, NHalf) = SubStaMatrix::Identity();
 }
 
 // Just to avoid repetition
 template <typename T, int N>
 inline void LDS2OrderUtility<T, N>::setScaling(RefSubMatrix& Kbar)
 {
-    // // Defining the scaling dependent on K. More complex stuff is possible.
-    // const double l1norm = Kbar.cwiseAbs().colwise().sum().maxCoeff();
-    // scalingT = sqrt(1 / l1norm);
-    // scalingSqrd = scalingT * scalingT;
+    // Defining the scaling dependent on K. More complex stuff is possible.
+    const double l1norm = Kbar.cwiseAbs().colwise().sum().maxCoeff();
+    scalingT = sqrt(1 / l1norm);
+    scalingSqrd = scalingT * scalingT;
 
-    // // Structure to scale only the latter half (speed) of xInit
-    // mulXInit = DynVector::Ones(n, 1);
-    // mulXInit.block(nHalf, 0, nHalf, 1) = scalingT * mulXInit.block(nHalf, 0, nHalf, 1);
-
-    // // Matrix used to scale back the result - additional descaling is dependent on the operation
-    // outScaler.block(0, 0, nHalf, nHalf) = DynMatrix::Identity(nHalf, nHalf);
-    // outScaler.block(nHalf, nHalf, nHalf, nHalf) = (1 / scalingT) * DynMatrix::Identity(nHalf, nHalf);
+    // Structure to scale only the latter half (speed) of xInit
+    mulXInit = StaVector::Ones();
+    mulXInit.template block<NHalf, 1>(NHalf, 0) = scalingT * mulXInit.template block<NHalf, 1>(NHalf, 0);
 }
 
 template <typename T, int N>
 inline void LDS2OrderUtility<T, N>::composeA(RefSubMatrix& Kbar, RefSubMatrix& Bbar)
 {
-    // As.block(nHalf, nHalf, nHalf, nHalf) = Bbar * scalingT;
-    // As.block(nHalf, 0, nHalf, nHalf) = Kbar * scalingSqrd;
+    As.template block<NHalf, NHalf>(NHalf, NHalf) = Bbar * scalingT;
+    As.template block<NHalf, NHalf>(NHalf, 0) = Kbar * scalingSqrd;
 }
 
 template <typename T, int N>
 void LDS2OrderUtility<T, N>::ComputeXt(RefSubMatrix& Kbar, RefSubMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
+    setScaling(Kbar);
+    composeA(Kbar, Bbar);
+
+    firstOrder.ComputeXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
+
+    // Rescaling back velocity components
+    out.template block<NHalf, 1>(NHalf, 0) = (1 / scalingT) * out.template block<NHalf, 1>(NHalf, 0);
 }
 
 template <typename T, int N>
 void LDS2OrderUtility<T, N>::ComputeIntegralXt(RefSubMatrix& Kbar, RefSubMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
+    setScaling(Kbar);
+    composeA(Kbar, Bbar);
+
+    firstOrder.ComputeIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
+
+    // Integral scaled back multiplied by scalingT, on integral part it simplyfies
+    out.template block<NHalf, 1>(0, 0) = scalingT * out.template block<NHalf, 1>(0, 0);
 }
 
 template <typename T, int N>
 void LDS2OrderUtility<T, N>::ComputeDoubleIntegralXt(RefSubMatrix& Kbar, RefSubMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
-    // // Building aumented matrix A2
-    // A2.template block<N, N>(0, 0) = A;
-    // A2.template block<N, 1>(0, N) = b;
-    // A2.template block<N, 1>(0, N + 1) = xInit;
-    // A2.template block<2, 2>(N, N + 1) = Matrix<T, 2, 2>::Identity();
-    // A2 *= step;
+    setScaling(Kbar);
+    composeA(Kbar, Bbar);
 
-    // // Vector z
-    // z2(N + 2, 0) = 1;
+    firstOrder.ComputeDoubleIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
 
-    // // Matrix exponential and extracting the interesting result
-    // expUtil3.computeExpTimesVector(A2, z2, res3);
-    // out = res3.template block<N, 1>(0, 0);
+    // Double integral needs to be scaled by scalingSqrd
+    out.template block<NHalf, 1>(0, 0) = scalingSqrd * out.template block<NHalf, 1>(0, 0);
+    out.template block<NHalf, 1>(NHalf, 0) = scalingT * out.template block<NHalf, 1>(NHalf, 0);
 }
 
 /*
@@ -143,19 +151,19 @@ void LDS2OrderUtility<T, N>::ComputeDoubleIntegralXt(RefSubMatrix& Kbar, RefSubM
 template <typename T, int N>
 void LDS2OrderUtility<T, N>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
-    ComputeXt(A.template block<NHalf, NHalf>(NHalf, 0) , A.template block<NHalf, NHalf>(NHalf, NHalf), b, xInit, step, out);
+    ComputeXt(A.template block<NHalf, NHalf>(NHalf, 0), A.template block<NHalf, NHalf>(NHalf, NHalf), b, xInit, step, out);
 }
 // ComputeIntegralXt
 template <typename T, int N>
 void LDS2OrderUtility<T, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
-    ComputeIntegralXt(A.template block<NHalf, NHalf>(NHalf, 0) , A.template block<NHalf, NHalf>(NHalf, NHalf), b, xInit, step, out);
+    ComputeIntegralXt(A.template block<NHalf, NHalf>(NHalf, 0), A.template block<NHalf, NHalf>(NHalf, NHalf), b, xInit, step, out);
 }
 // ComputeDoubleIntegralXt
 template <typename T, int N>
 void LDS2OrderUtility<T, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
-    ComputeDoubleIntegralXt(A.template block<NHalf, NHalf>(NHalf, 0) , A.template block<NHalf, NHalf>(NHalf, NHalf), b, xInit, step, out);
+    ComputeDoubleIntegralXt(A.template block<NHalf, NHalf>(NHalf, 0), A.template block<NHalf, NHalf>(NHalf, NHalf), b, xInit, step, out);
 }
 
 /*
@@ -187,8 +195,8 @@ private:
     typedef Ref<DynVector> RefOutVector;
 
     // Preallocating useful stuff
-    DynVector mulXInit, tempOut;
-    DynMatrix As, outScaler;
+    DynVector mulXInit;
+    DynMatrix As;
 
 public:
     // Would like to forbid creation without specifying a size, but it would prevent use as a class field
@@ -239,8 +247,6 @@ void LDS2OrderUtility<T, Dynamic>::resize(int n)
     // Common
     As = DynMatrix::Zero(n, n);
     As.block(0, nHalf, nHalf, nHalf) = DynMatrix::Identity(nHalf, nHalf);
-    outScaler = DynMatrix::Zero(n, n);
-    tempOut.resize(n, 1);
 }
 
 // Just to avoid repetition
@@ -255,10 +261,6 @@ inline void LDS2OrderUtility<T, Dynamic>::setScaling(RefMatrix& Kbar)
     // Structure to scale only the latter half (speed) of xInit
     mulXInit = DynVector::Ones(n, 1);
     mulXInit.block(nHalf, 0, nHalf, 1) = scalingT * mulXInit.block(nHalf, 0, nHalf, 1);
-
-    // Matrix used to scale back the result - additional descaling is dependent on the operation
-    outScaler.block(0, 0, nHalf, nHalf) = DynMatrix::Identity(nHalf, nHalf);
-    outScaler.block(nHalf, nHalf, nHalf, nHalf) = (1 / scalingT) * DynMatrix::Identity(nHalf, nHalf);
 }
 
 template <typename T>
@@ -275,9 +277,9 @@ void LDS2OrderUtility<T, Dynamic>::ComputeXt(RefMatrix& Kbar, RefMatrix& Bbar, R
     setScaling(Kbar);
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, tempOut);
+    firstOrder.ComputeXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
 
-    out = outScaler * tempOut;
+    out.block(nHalf, 0, nHalf, 1) = (1 / scalingT) * out.block(nHalf, 0, nHalf, 1);
 }
 
 // ComputeIntegralXt
@@ -288,10 +290,9 @@ void LDS2OrderUtility<T, Dynamic>::ComputeIntegralXt(RefMatrix& Kbar, RefMatrix&
 
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, tempOut);
+    firstOrder.ComputeIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
 
-    outScaler *= scalingT;
-    out = outScaler * tempOut;
+    out.block(0, 0, nHalf, 1) = scalingT * out.block(0, 0, nHalf, 1);
 }
 
 // ComputeDoubleIntegralXt
@@ -302,10 +303,10 @@ void LDS2OrderUtility<T, Dynamic>::ComputeDoubleIntegralXt(RefMatrix& Kbar, RefM
 
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeDoubleIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, tempOut);
+    firstOrder.ComputeDoubleIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
 
-    outScaler *= scalingSqrd;
-    out = outScaler * tempOut;
+    out.block(0, 0, nHalf, 1) = scalingSqrd * out.block(0, 0, nHalf, 1);
+    out.block(nHalf, 0, nHalf, 1) = scalingT * out.block(nHalf, 0, nHalf, 1);
 }
 
 /*
