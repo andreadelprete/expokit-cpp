@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
     cout << "Start test delta update" << endl;
 
     // Used with test on simulation data
-    vector<MatrixXd> vecA = readTSV("tests/logStuffA", M, M);
+    vector<MatrixXd> vecA = readTSV("exampleData/logStuffA", M, M);
 
     Matrix<double, M, M> res0, res1, res2;
 
