@@ -29,9 +29,7 @@ SET(${LIBRARY_NAME}_SOURCES
 #    zgphiv.c  
 #    zhpadm.c  
 #    znchbv.c
-    expokit.cpp
     stop-watch.cpp
-    LDSUtility.cpp
   )
 
 ADD_LIBRARY(${LIBRARY_NAME} SHARED ${HEADERS_FULL_PATH} ${${LIBRARY_NAME}_SOURCES})
