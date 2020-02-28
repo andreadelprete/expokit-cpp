@@ -23,9 +23,8 @@ int main(int argc, char* argv[])
 
     // Load simulation data
     vector<MatrixXd> vecA = readTSV("exampleData/logStuffA", M, M);
-    vector<MatrixXd> vecb = readTSV("exampleData/logStuffA", M, M);
-    vector<MatrixXd> vecxInit = readTSV("exampleData/logStuffA", M, M);
-
+    vector<MatrixXd> vecb = readTSV("exampleData/logStuffb", M, 1);
+    vector<MatrixXd> vecxInit = readTSV("exampleData/logStuffxInit", M, 1);
     Matrix<double, M, 1> out;
 
     // LDS2OrderUtility<double, Dynamic> util2(M);
@@ -55,7 +54,7 @@ int main(int argc, char* argv[])
             STOP_PROFILER("DeltaOFF_TSON");
 
             START_PROFILER("DeltaON_TSON");
-            deltaOff2.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
+            deltaOn2.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
             STOP_PROFILER("DeltaON_TSON");
         }
     }

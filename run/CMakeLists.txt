@@ -1,27 +1,24 @@
+MACRO(ADD_RUN NAME PKGS)
+  add_executable(${NAME} ${NAME}.cpp)
 
-find_package (Eigen3 3.3 REQUIRED NO_MODULE)
+  SET_TARGET_PROPERTIES(${NAME} PROPERTIES LINKER_LANGUAGE CXX)
+  SET(MODULE_NAME "${NAME}Test")
+  STRING(REGEX REPLACE "-" "_" MODULE_NAME ${MODULE_NAME})
 
-# Delta performance evaluation
-add_executable(runDelta runDelta.cpp)
-target_include_directories(runDelta PRIVATE ../include)
-target_sources(runDelta PRIVATE ../src/stop-watch.cpp)
-target_link_libraries (runDelta Eigen3::Eigen)
+  FOREACH(PKG ${PKGS})
+    PKG_CONFIG_USE_DEPENDENCY(${NAME} ${PKG})
+  ENDFOREACH(PKG)
 
-# Simple example of basic usage
-add_executable(runExample runExample.cpp)
-target_include_directories(runExample PRIVATE ../include)
-target_sources(runExample PRIVATE ../src/stop-watch.cpp)
-target_link_libraries (runExample Eigen3::Eigen)
+  TARGET_LINK_LIBRARIES(${NAME} ${PROJECT_NAME})
+ENDMACRO(ADD_RUN)
 
-# Example of TSV loader
-add_executable(runTSVExample runTSVExample.cpp)
-target_include_directories(runTSVExample PRIVATE ../include)
-target_sources(runTSVExample PRIVATE ../src/stop-watch.cpp)
-target_link_libraries (runTSVExample Eigen3::Eigen)
+ADD_RUN(runDelta "eigen3")
+ADD_RUN(runBench "eigen3")
+ADD_RUN(runExample "eigen3")
+ADD_RUN(runTSVExample "eigen3")
 
-# Delta and TS performance evaluation
-add_executable(runBench runBench.cpp)
-target_include_directories(runBench PRIVATE ../include)
-target_sources(runBench PRIVATE ../src/stop-watch.cpp)
-target_link_libraries (runBench Eigen3::Eigen)
+
+
+
+
 

@@ -1,3 +1,4 @@
+#include "LDS2OrderUtility.hpp"
 #include "LDSUtility.hpp"
 #include "MatrixExponential.hpp"
 #include <Eigen/Core>
@@ -26,9 +27,12 @@ int main()
     A *= 0.1;
     Matrix<double, N, 1> xInit;
     xInit << 1, 2, 3, 4;
+    Matrix<double, N, 1> b;
+    b << 4, 3, 2, 1;
 
     MatrixExponential<double, Dynamic> expUtil(N);
     LDSUtility<double, Dynamic> lds(N);
+    LDS2OrderUtility<double, Dynamic> lds2(N);
 
     // MatrixExponential
     Matrix<double, N, 1> res1;
@@ -36,22 +40,15 @@ int main()
 
     EIGEN_MALLOC_NOT_ALLOWED
     expUtil.computeExpTimesVector(A, xInit, res1);
-    cout << res1 << endl;
-
     expUtil.compute(A, res2);
-    cout << res2 * xInit << endl
-         << endl;
 
     // LDSUtility
-    Matrix<double, N, 1> b;
-    b << 4, 3, 2, 1;
-
     lds.ComputeXt(A, b, xInit, 1, res1);
-    cout << res1 << endl;
-
     lds.ComputeIntegralXt(A, b, xInit, 1, res1);
-    cout << res1 << endl;
-
     lds.ComputeDoubleIntegralXt(A, b, xInit, 1, res1);
-    cout << res1 << endl;
+
+    // LDS2
+    lds2.ComputeXt(A, b, xInit, 1, res1);
+    lds2.ComputeIntegralXt(A, b, xInit, 1, res1);
+    lds2.ComputeDoubleIntegralXt(A, b, xInit, 1, res1);
 }

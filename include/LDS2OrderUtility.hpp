@@ -38,7 +38,7 @@ private:
     typedef Matrix<T, N, N> StaMatrix;
     typedef Matrix<T, NHalf, NHalf> SubStaMatrix;
 
-    StaVector mulXInit;
+    StaVector mulXInit, bTemp;
     StaMatrix As;
 
     T scalingT;
@@ -56,6 +56,8 @@ public:
 
     void useDelta(bool yesOrNo);
     bool isDeltaUsed();
+    void setMinSquarings(int minSquarings);
+    int getMinSquarings();
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -87,6 +89,7 @@ LDS2OrderUtility<T, N>::LDS2OrderUtility()
     As.template block<NHalf, NHalf>(0, NHalf) = SubStaMatrix::Identity();
 }
 
+// Properties about Delta
 template <typename T, int N>
 void LDS2OrderUtility<T, N>::useDelta(bool yesOrNo)
 {
@@ -96,7 +99,20 @@ void LDS2OrderUtility<T, N>::useDelta(bool yesOrNo)
 template <typename T, int N>
 bool LDS2OrderUtility<T, N>::isDeltaUsed()
 {
-    return firstOrder.getDelta();
+    return firstOrder.isDeltaUsed();
+}
+
+// Properties about Time Scaling
+template <typename T, int N>
+void LDS2OrderUtility<T, N>::setMinSquarings(int minSquarings)
+{
+    firstOrder.setMinSquarings(minSquarings);
+}
+
+template <typename T, int N>
+int LDS2OrderUtility<T, N>::getMinSquarings()
+{
+    return firstOrder.getMinSquarings();
 }
 
 // Just to avoid repetition
@@ -126,7 +142,10 @@ void LDS2OrderUtility<T, N>::ComputeXt(RefSubMatrix& Kbar, RefSubMatrix& Bbar, R
     setScaling(Kbar);
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
+    mulXInit = xInit.cwiseProduct(mulXInit);
+    bTemp = b * scalingSqrd;
+
+    firstOrder.ComputeXt(As, bTemp, mulXInit, step / scalingT, out);
 
     // Rescaling back velocity components
     out.template block<NHalf, 1>(NHalf, 0) = (1 / scalingT) * out.template block<NHalf, 1>(NHalf, 0);
@@ -138,7 +157,10 @@ void LDS2OrderUtility<T, N>::ComputeIntegralXt(RefSubMatrix& Kbar, RefSubMatrix&
     setScaling(Kbar);
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
+    mulXInit = xInit.cwiseProduct(mulXInit);
+    bTemp = b * scalingSqrd;
+
+    firstOrder.ComputeIntegralXt(As, bTemp, mulXInit, step / scalingT, out);
 
     // Integral scaled back multiplied by scalingT, on integral part it simplyfies
     out.template block<NHalf, 1>(0, 0) = scalingT * out.template block<NHalf, 1>(0, 0);
@@ -150,7 +172,10 @@ void LDS2OrderUtility<T, N>::ComputeDoubleIntegralXt(RefSubMatrix& Kbar, RefSubM
     setScaling(Kbar);
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeDoubleIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
+    mulXInit = xInit.cwiseProduct(mulXInit);
+    bTemp = b * scalingSqrd;
+
+    firstOrder.ComputeDoubleIntegralXt(As, bTemp, mulXInit, step / scalingT, out);
 
     // Double integral needs to be scaled by scalingSqrd
     out.template block<NHalf, 1>(0, 0) = scalingSqrd * out.template block<NHalf, 1>(0, 0);
@@ -210,7 +235,7 @@ private:
     typedef Ref<DynVector> RefOutVector;
 
     // Preallocating useful stuff
-    DynVector mulXInit;
+    DynVector mulXInit, bTemp;
     DynMatrix As;
 
 public:
@@ -223,6 +248,8 @@ public:
 
     void useDelta(bool yesOrNo);
     bool isDeltaUsed();
+    void setMinSquarings(int minSquarings);
+    int getMinSquarings();
 
     void resize(int n);
 
@@ -255,6 +282,7 @@ LDS2OrderUtility<T, Dynamic>::LDS2OrderUtility(int n)
     resize(n);
 }
 
+// Properties about Delta
 template <typename T>
 void LDS2OrderUtility<T, Dynamic>::useDelta(bool yesOrNo)
 {
@@ -264,7 +292,20 @@ void LDS2OrderUtility<T, Dynamic>::useDelta(bool yesOrNo)
 template <typename T>
 bool LDS2OrderUtility<T, Dynamic>::isDeltaUsed()
 {
-    return firstOrder.getDelta();
+    return firstOrder.isDeltaUsed();
+}
+
+// Properties about Time Scaling
+template <typename T>
+void LDS2OrderUtility<T, Dynamic>::setMinSquarings(int minSquarings)
+{
+    firstOrder.setMinSquarings(minSquarings);
+}
+
+template <typename T>
+int LDS2OrderUtility<T, Dynamic>::getMinSquarings()
+{
+    return firstOrder.getMinSquarings();
 }
 
 template <typename T>
@@ -277,6 +318,8 @@ void LDS2OrderUtility<T, Dynamic>::resize(int n)
     // Common
     As = DynMatrix::Zero(n, n);
     As.block(0, nHalf, nHalf, nHalf) = DynMatrix::Identity(nHalf, nHalf);
+    mulXInit.resize(n, 1);
+    bTemp.resize(n, 1);
 }
 
 // Just to avoid repetition
@@ -307,7 +350,10 @@ void LDS2OrderUtility<T, Dynamic>::ComputeXt(RefMatrix& Kbar, RefMatrix& Bbar, R
     setScaling(Kbar);
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
+    mulXInit = xInit.cwiseProduct(mulXInit);
+    bTemp = b * scalingSqrd;
+
+    firstOrder.ComputeXt(As, bTemp, mulXInit, step / scalingT, out);
 
     out.block(nHalf, 0, nHalf, 1) = (1 / scalingT) * out.block(nHalf, 0, nHalf, 1);
 }
@@ -317,10 +363,12 @@ template <typename T>
 void LDS2OrderUtility<T, Dynamic>::ComputeIntegralXt(RefMatrix& Kbar, RefMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
     setScaling(Kbar);
-
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
+    mulXInit = xInit.cwiseProduct(mulXInit);
+    bTemp = b * scalingSqrd;
+
+    firstOrder.ComputeIntegralXt(As, bTemp, mulXInit, step / scalingT, out);
 
     out.block(0, 0, nHalf, 1) = scalingT * out.block(0, 0, nHalf, 1);
 }
@@ -330,10 +378,12 @@ template <typename T>
 void LDS2OrderUtility<T, Dynamic>::ComputeDoubleIntegralXt(RefMatrix& Kbar, RefMatrix& Bbar, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
     setScaling(Kbar);
-
     composeA(Kbar, Bbar);
 
-    firstOrder.ComputeDoubleIntegralXt(As, b * scalingSqrd, xInit.cwiseProduct(mulXInit), step / scalingT, out);
+    mulXInit = xInit.cwiseProduct(mulXInit);
+    bTemp = b * scalingSqrd;
+
+    firstOrder.ComputeDoubleIntegralXt(As, bTemp, mulXInit, step / scalingT, out);
 
     out.block(0, 0, nHalf, 1) = scalingSqrd * out.block(0, 0, nHalf, 1);
     out.block(nHalf, 0, nHalf, 1) = scalingT * out.block(nHalf, 0, nHalf, 1);

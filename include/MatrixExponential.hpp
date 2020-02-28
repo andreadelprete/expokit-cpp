@@ -27,6 +27,9 @@ int MAIN__() { return 0; }
 }
 #endif
 
+#define DEFAULT_MIN_SQUARINGS 10
+#define METAPROD_SIZE 50
+
 using namespace Eigen;
 
 namespace expokit {
@@ -53,7 +56,7 @@ private:
     PartialPivLU<MatrixType> ppLU;
     int squarings;
 
-    MatrixType metaProds[50]; // Should be enough to not check every time?
+    MatrixType metaProds[METAPROD_SIZE]; // Should be enough to not check every time?
     MatrixType prevA, deltaA; // Used in delta update
     bool delta, deltaUsed;
     int minSquarings; // Default is 10
@@ -68,8 +71,7 @@ public:
     int getSquarings() const { return squarings; }
 
     void useDelta(bool delta) { this->delta = delta; }
-    bool getDelta() { return delta; }
-
+    bool isDeltaUsed() { return delta; }
     bool wasDeltaUsed() { return deltaUsed; }
 
     int getMinSquarings() { return minSquarings; }
@@ -172,8 +174,11 @@ void MatrixExponential<T, N>::init(int n)
     ppLU = PartialPivLU<MatrixType>(n);
     v_tmp.resize(n);
     squarings = 0;
-    minSquarings = 10;
+    minSquarings = DEFAULT_MIN_SQUARINGS;
     delta = false;
+    for(int i = 0; i < METAPROD_SIZE; i++) {
+        metaProds[i].resize(n, n);
+    }
     resetDelta();
 }
 

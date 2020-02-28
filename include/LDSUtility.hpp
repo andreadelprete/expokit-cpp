@@ -58,6 +58,8 @@ public:
 
     void useDelta(bool yesOrNo);
     bool isDeltaUsed();
+    void setMinSquarings(int minSquarings);
+    int getMinSquarings();
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -85,6 +87,7 @@ LDSUtility<T, N>::LDSUtility()
     z2 = Matrix<T, N + 3, 1>::Zero();
 }
 
+// Properties about Delta
 template <typename T, int N>
 void LDSUtility<T, N>::useDelta(bool yesOrNo)
 {
@@ -96,7 +99,22 @@ void LDSUtility<T, N>::useDelta(bool yesOrNo)
 template <typename T, int N>
 bool LDSUtility<T, N>::isDeltaUsed()
 {
-    return expUtil1.getDelta();
+    return expUtil1.isDeltaUsed();
+}
+
+// Properties about Time Scaling
+template <typename T, int N>
+void LDSUtility<T, N>::setMinSquarings(int minSquarings)
+{
+    expUtil1.setMinSquarings(minSquarings);
+    expUtil2.setMinSquarings(minSquarings);
+    expUtil3.setMinSquarings(minSquarings);
+}
+
+template <typename T, int N>
+int LDSUtility<T, N>::getMinSquarings()
+{
+    return expUtil1.getMinSquarings();
 }
 
 template <typename T, int N>
@@ -195,6 +213,8 @@ public:
 
     void useDelta(bool yesOrNo);
     bool isDeltaUsed();
+    void setMinSquarings(int minSquarings);
+    int getMinSquarings();
 
     void resize(int n);
 
@@ -220,6 +240,7 @@ LDSUtility<T, Dynamic>::LDSUtility(int n)
     resize(n);
 }
 
+// Properties about Delta
 template <typename T>
 void LDSUtility<T, Dynamic>::useDelta(bool yesOrNo)
 {
@@ -231,7 +252,22 @@ void LDSUtility<T, Dynamic>::useDelta(bool yesOrNo)
 template <typename T>
 bool LDSUtility<T, Dynamic>::isDeltaUsed()
 {
-    return expUtil1.getDelta();
+    return expUtil1.isDeltaUsed();
+}
+
+// Properties about Time Scaling
+template <typename T>
+void LDSUtility<T, Dynamic>::setMinSquarings(int minSquarings)
+{
+    expUtil1.setMinSquarings(minSquarings);
+    expUtil2.setMinSquarings(minSquarings);
+    expUtil3.setMinSquarings(minSquarings);
+}
+
+template <typename T>
+int LDSUtility<T, Dynamic>::getMinSquarings()
+{
+    return expUtil1.getMinSquarings();
 }
 
 template <typename T>
