@@ -58,6 +58,8 @@ public:
     bool isDeltaUsed();
     void setMinSquarings(int minSquarings);
     int getMinSquarings();
+    void useTV(bool yesOrNo) { firstOrder.useTV(yesOrNo); }
+    bool isTVUsed() { return firstOrder.isTVUsed(); }
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -250,6 +252,8 @@ public:
     bool isDeltaUsed();
     void setMinSquarings(int minSquarings);
     int getMinSquarings();
+    void useTV(bool yesOrNo) { firstOrder.useTV(yesOrNo); }
+    bool isTVUsed() { return firstOrder.isTVUsed(); }
 
     void resize(int n);
 

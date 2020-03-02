@@ -10,6 +10,7 @@
                 "-DEIGEN_RUNTIME_NO_MALLOC",
                 "-I/opt/openrobots/include/eigen3",
                 "-I/${fileDirname}/../include",
+                "${fileDirname}/../src/stop-watch.cpp",
                 "-o",
                 "${fileDirname}/../build/${fileBasenameNoExtension}"
             ],

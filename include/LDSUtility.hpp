@@ -31,8 +31,13 @@ private:
     MatrixExponential<T, N + 3> expUtil3;
 
     Matrix<T, N + 1, 1> res1;
+    Matrix<T, N + 1, N + 1> res1all;
+
     Matrix<T, N + 2, 1> res2;
+    Matrix<T, N + 2, N + 2> res2all;
+
     Matrix<T, N + 3, 1> res3;
+    Matrix<T, N + 3, N + 3> res3all;
 
     Matrix<T, N + 1, N + 1> A0;
     Matrix<T, N + 1, 1> x0;
@@ -53,6 +58,8 @@ private:
 
     typedef Ref<StaVector> RefOutVector;
 
+    bool timesVector;
+
 public:
     LDSUtility();
 
@@ -60,6 +67,8 @@ public:
     bool isDeltaUsed();
     void setMinSquarings(int minSquarings);
     int getMinSquarings();
+    void useTV(bool yesOrNo) { timesVector = yesOrNo; }
+    bool isTVUsed() { return timesVector; }
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -85,6 +94,8 @@ LDSUtility<T, N>::LDSUtility()
     z1 = Matrix<T, N + 2, 1>::Zero();
     A2 = Matrix<T, N + 3, N + 3>::Zero();
     z2 = Matrix<T, N + 3, 1>::Zero();
+
+    timesVector = false;
 }
 
 // Properties about Delta
@@ -129,7 +140,13 @@ void LDSUtility<T, N>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, T
     x0 << xInit, 1;
 
     // Matrix exponential Extracting the interesting result
-    expUtil1.computeExpTimesVector(A0, x0, res1);
+    if (timesVector) {
+        expUtil1.computeExpTimesVector(A0, x0, res1);
+    } else {
+        expUtil1.compute(A0, res1all);
+        res1.noalias() = res1all * x0;
+    }
+
     out = res1.template block<N, 1>(0, 0);
 }
 
@@ -149,7 +166,13 @@ void LDSUtility<T, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& 
     z1(N + 1, 0) = 1;
 
     // Matrix exponential and extracting the interesting result
-    expUtil2.computeExpTimesVector(A1, z1, res2);
+    if (timesVector) {
+        expUtil2.computeExpTimesVector(A1, z1, res2);
+    } else {
+        expUtil2.compute(A1, res2all);
+        res2.noalias() = res2all * z1;
+    }
+
     out = res2.template block<N, 1>(0, 0);
 }
 
@@ -167,7 +190,13 @@ void LDSUtility<T, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVe
     z2(N + 2, 0) = 1;
 
     // Matrix exponential and extracting the interesting result
-    expUtil3.computeExpTimesVector(A2, z2, res3);
+    if (timesVector) {
+        expUtil3.computeExpTimesVector(A2, z2, res3);
+    } else {
+        expUtil3.compute(A2, res3all);
+        res3.noalias() = res3all * z2;
+    }
+
     out = res3.template block<N, 1>(0, 0);
 }
 
@@ -201,7 +230,9 @@ private:
 
     // Preallocating useful stuff
     DynVector res1, res2, res3, x0, z1, z2;
-    DynMatrix A0, A1, A2;
+    DynMatrix res1all, res2all, res3all, A0, A1, A2;
+
+    bool timesVector;
 
 public:
     // Would like to forbid creation without specifying a size, but it would prevent use as a class field
@@ -215,6 +246,8 @@ public:
     bool isDeltaUsed();
     void setMinSquarings(int minSquarings);
     int getMinSquarings();
+    void useTV(bool yesOrNo) { timesVector = yesOrNo; }
+    bool isTVUsed() { return timesVector; }
 
     void resize(int n);
 
@@ -274,23 +307,27 @@ template <typename T>
 void LDSUtility<T, Dynamic>::resize(int n)
 {
     this->n = n;
+    timesVector = false;
     expUtil1.resize(n + 1);
     expUtil2.resize(n + 2);
     expUtil3.resize(n + 3);
 
     // Stuff for ComputeXt
     res1.resize(n + 1, 1);
+    res1all.resize(n + 1, n + 1);
     A0 = DynMatrix::Zero(n + 1, n + 1);
     x0.resize(n + 1, 1);
 
     // Stuff for ComputeIntegralXt
     res2.resize(n + 2, 1);
+    res2all.resize(n + 2, n + 2);
     A1 = DynMatrix::Zero(n + 2, n + 2);
     z1 = DynVector::Zero(n + 2, 1);
     z1(n + 1, 0) = 1; // This is constant
 
     // Stuff for ComputeDoubleIntegralXt
     res3.resize(n + 3, 1);
+    res3.resize(n + 3, n + 3);
     A2 = DynMatrix::Zero(n + 3, n + 3);
     z2 = DynVector::Zero(n + 3, 1);
     z2(n + 2, 0) = 1;
@@ -308,7 +345,13 @@ void LDSUtility<T, Dynamic>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xI
     x0 << xInit, 1;
 
     // Matrix exponential Extracting the interesting result
-    expUtil1.computeExpTimesVector(A0, x0, res1);
+    if (timesVector) {
+        expUtil1.computeExpTimesVector(A0, x0, res1);
+    } else {
+        expUtil1.compute(A0, res1all);
+        res1.noalias() = res1all * x0;
+    }
+
     out = res1.block(0, 0, n, 1);
 }
 
@@ -325,7 +368,13 @@ void LDSUtility<T, Dynamic>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVe
     A1 *= step;
 
     //Matrix exponential and extracting the interesting result
-    expUtil2.computeExpTimesVector(A1, z1, res2);
+    if (timesVector) {
+        expUtil2.computeExpTimesVector(A1, z1, res2);
+    } else {
+        expUtil2.compute(A1, res2all);
+        res2.noalias() = res2all * z1;
+    }
+
     out = res2.block(0, 0, n, 1);
 }
 
@@ -342,7 +391,13 @@ void LDSUtility<T, Dynamic>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b,
     A2 *= step;
 
     // Matrix exponential and extracting the interesting result
-    expUtil3.computeExpTimesVector(A2, z2, res3);
+    if (timesVector) {
+        expUtil3.computeExpTimesVector(A2, z2, res3);
+    } else {
+        expUtil3.compute(A2, res3all);
+        res3.noalias() = res3all * z2;
+    }
+
     out = res3.block(0, 0, n, 1);
 }
 }

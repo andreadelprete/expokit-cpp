@@ -27,36 +27,57 @@ int main(int argc, char* argv[])
     vector<MatrixXd> vecxInit = readTSV("exampleData/logStuffxInit", M, 1);
     Matrix<double, M, 1> out;
 
-    // LDS2OrderUtility<double, Dynamic> util2(M);
-    LDS2OrderUtility<double, M> deltaOn2;
-    deltaOn2.useDelta(true);
-    LDS2OrderUtility<double, M> deltaOff2;
+    // DeltaOFF_TSOFF_TVOFF
+    LDSUtility<double, M> d0t0v0;
 
-    LDSUtility<double, M> deltaOn;
-    deltaOn.useDelta(true);
-    LDSUtility<double, M> deltaOff;
+    // DeltaON_TSOFF_TVOFF
+    LDSUtility<double, M> d1t0v0;
+    d1t0v0.useDelta(true);
+
+    // DeltaX_TSOFF_TVON
+    LDSUtility<double, M> dxt0v1;
+    dxt0v1.useTV(true);
+
+    // DeltaOFF_TSON_TVOFF
+    LDS2OrderUtility<double, M> d0t1v0;
+    
+    // DeltaON_TSON_TVOFF
+    LDS2OrderUtility<double, M> d1t1v0;
+    d1t1v0.useDelta(true);
+
+    // DeltaX_TSON_TVON
+    LDS2OrderUtility<double, M> dxt1v1;
+    d1t1v0.useTV(true);
+
+
 
     // if (argc > 1) {
     //     deltaOn.setMinSquarings(atoi(argv[1]));
     // }
-    for (int i = 0; i < 100; ++i) {
-        for (unsigned int i = 0; i < vecA.size(); ++i) {
-            START_PROFILER("DeltaOFF_TSOFF");
-            deltaOff.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
-            STOP_PROFILER("DeltaOFF_TSOFF");
+    for (unsigned int i = 0; i < vecA.size(); ++i) {
+        START_PROFILER("DeltaOFF_TSOFF_TVOFF");
+        d0t0v0.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
+        STOP_PROFILER("DeltaOFF_TSOFF_TVOFF");
 
-            START_PROFILER("DeltaON_TSOFF");
-            deltaOn.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
-            STOP_PROFILER("DeltaON_TSOFF");
+        START_PROFILER("DeltaON__TSOFF_TVOFF");
+        d1t0v0.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
+        STOP_PROFILER("DeltaON__TSOFF_TVOFF");
 
-            START_PROFILER("DeltaOFF_TSON");
-            deltaOff2.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
-            STOP_PROFILER("DeltaOFF_TSON");
+        START_PROFILER("DeltaX___TSOFF_TVON");
+        dxt0v1.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
+        STOP_PROFILER("DeltaX___TSOFF_TVON");
 
-            START_PROFILER("DeltaON_TSON");
-            deltaOn2.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
-            STOP_PROFILER("DeltaON_TSON");
-        }
+        START_PROFILER("DeltaOFF_TSON__TVOFF");
+        d0t1v0.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
+        STOP_PROFILER("DeltaOFF_TSON__TVOFF");
+
+        START_PROFILER("DeltaON__TSON__TVOFF");
+        d1t1v0.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
+        STOP_PROFILER("DeltaON__TSON__TVOFF");
+
+        START_PROFILER("DeltaX___TSON__TVON");
+        dxt1v1.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], 0.005, out);
+        STOP_PROFILER("DeltaX___TSON__TVON");                
     }
 
     getProfiler().report_all(3);

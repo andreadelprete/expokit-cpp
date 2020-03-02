@@ -51,4 +51,6 @@ int main()
     lds2.ComputeXt(A, b, xInit, 1, res1);
     lds2.ComputeIntegralXt(A, b, xInit, 1, res1);
     lds2.ComputeDoubleIntegralXt(A, b, xInit, 1, res1);
+
+    // TODO delta active 
 }
