@@ -60,6 +60,8 @@ public:
     int getMinSquarings();
     void useTV(bool yesOrNo) { firstOrder.useTV(yesOrNo); }
     bool isTVUsed() { return firstOrder.isTVUsed(); }
+    void setTVSquarings(int TVSquarings) { firstOrder.setTVSquarings(TVSquarings); }
+    int getTVSquarings() {return firstOrder.getTVSquarings(); }
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -254,6 +256,8 @@ public:
     int getMinSquarings();
     void useTV(bool yesOrNo) { firstOrder.useTV(yesOrNo); }
     bool isTVUsed() { return firstOrder.isTVUsed(); }
+    void setTVSquarings(int TVSquarings) { firstOrder.setTVSquarings(TVSquarings); }
+    int getTVSquarings() {return firstOrder.getTVSquarings(); }
 
     void resize(int n);
 

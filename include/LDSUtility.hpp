@@ -59,6 +59,7 @@ private:
     typedef Ref<StaVector> RefOutVector;
 
     bool timesVector;
+    int TVSquarings;
 
 public:
     LDSUtility();
@@ -69,6 +70,8 @@ public:
     int getMinSquarings();
     void useTV(bool yesOrNo) { timesVector = yesOrNo; }
     bool isTVUsed() { return timesVector; }
+    void setTVSquarings(int TVSquarings) {this->TVSquarings = TVSquarings; }
+    int getTVSquarings() {return TVSquarings; }
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -96,6 +99,7 @@ LDSUtility<T, N>::LDSUtility()
     z2 = Matrix<T, N + 3, 1>::Zero();
 
     timesVector = false;
+    TVSquarings = -1; 
 }
 
 // Properties about Delta
@@ -141,7 +145,7 @@ void LDSUtility<T, N>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, T
 
     // Matrix exponential Extracting the interesting result
     if (timesVector) {
-        expUtil1.computeExpTimesVector(A0, x0, res1);
+        expUtil1.computeExpTimesVector(A0, x0, res1, TVSquarings);
     } else {
         expUtil1.compute(A0, res1all);
         res1.noalias() = res1all * x0;
@@ -167,7 +171,7 @@ void LDSUtility<T, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& 
 
     // Matrix exponential and extracting the interesting result
     if (timesVector) {
-        expUtil2.computeExpTimesVector(A1, z1, res2);
+        expUtil2.computeExpTimesVector(A1, z1, res2, TVSquarings);
     } else {
         expUtil2.compute(A1, res2all);
         res2.noalias() = res2all * z1;
@@ -191,7 +195,7 @@ void LDSUtility<T, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVe
 
     // Matrix exponential and extracting the interesting result
     if (timesVector) {
-        expUtil3.computeExpTimesVector(A2, z2, res3);
+        expUtil3.computeExpTimesVector(A2, z2, res3, TVSquarings);
     } else {
         expUtil3.compute(A2, res3all);
         res3.noalias() = res3all * z2;
@@ -233,6 +237,8 @@ private:
     DynMatrix res1all, res2all, res3all, A0, A1, A2;
 
     bool timesVector;
+    int TVSquarings;
+
 
 public:
     // Would like to forbid creation without specifying a size, but it would prevent use as a class field
@@ -248,6 +254,8 @@ public:
     int getMinSquarings();
     void useTV(bool yesOrNo) { timesVector = yesOrNo; }
     bool isTVUsed() { return timesVector; }
+    void setTVSquarings(int TVSquarings) {this->TVSquarings = TVSquarings; }
+    int getTVSquarings() {return TVSquarings; }
 
     void resize(int n);
 
@@ -308,6 +316,7 @@ void LDSUtility<T, Dynamic>::resize(int n)
 {
     this->n = n;
     timesVector = false;
+    TVSquarings = -1; 
     expUtil1.resize(n + 1);
     expUtil2.resize(n + 2);
     expUtil3.resize(n + 3);
@@ -346,7 +355,7 @@ void LDSUtility<T, Dynamic>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xI
 
     // Matrix exponential Extracting the interesting result
     if (timesVector) {
-        expUtil1.computeExpTimesVector(A0, x0, res1);
+        expUtil1.computeExpTimesVector(A0, x0, res1, TVSquarings);
     } else {
         expUtil1.compute(A0, res1all);
         res1.noalias() = res1all * x0;
@@ -369,7 +378,7 @@ void LDSUtility<T, Dynamic>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVe
 
     //Matrix exponential and extracting the interesting result
     if (timesVector) {
-        expUtil2.computeExpTimesVector(A1, z1, res2);
+        expUtil2.computeExpTimesVector(A1, z1, res2, TVSquarings);
     } else {
         expUtil2.compute(A1, res2all);
         res2.noalias() = res2all * z1;
@@ -392,7 +401,7 @@ void LDSUtility<T, Dynamic>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b,
 
     // Matrix exponential and extracting the interesting result
     if (timesVector) {
-        expUtil3.computeExpTimesVector(A2, z2, res3);
+        expUtil3.computeExpTimesVector(A2, z2, res3, TVSquarings);
     } else {
         expUtil3.compute(A2, res3all);
         res3.noalias() = res3all * z2;

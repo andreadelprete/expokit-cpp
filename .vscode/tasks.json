@@ -11,6 +11,7 @@
                 "-I/opt/openrobots/include/eigen3",
                 "-I/${fileDirname}/../include",
                 "${fileDirname}/../src/stop-watch.cpp",
+                "${fileDirname}/../src/statistics.cpp",
                 "-o",
                 "${fileDirname}/../build/${fileBasenameNoExtension}"
             ],

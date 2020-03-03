@@ -30,6 +30,7 @@ SET(${LIBRARY_NAME}_SOURCES
 #    zhpadm.c  
 #    znchbv.c
     stop-watch.cpp
+    statistics.cpp
   )
 
 ADD_LIBRARY(${LIBRARY_NAME} SHARED ${HEADERS_FULL_PATH} ${${LIBRARY_NAME}_SOURCES})
