@@ -102,10 +102,11 @@ int main(int argc, char* argv[])
         }
 
         // Comment out to see detailed error output
-        // cout << round((res0 - res2).eval().cwiseAbs().sum() * 1000.0) / 1000.0 << '\t'
-        //      << round((res0 - res2).eval().maxCoeff() * 1000.0) / 1000.0 << '\t'
-        //      << deltaOn.wasDeltaUsed() << '\t'
-        //      << i << endl;
+        cout << round((res0 - res2).eval().cwiseAbs().sum() * 1000.0) / 1000.0 << '\t'
+             << round((res0 - res2).eval().maxCoeff() * 1000.0) / 1000.0 << '\t'
+             << deltaOn.wasDeltaUsed() << '\t'
+             << deltaOn.getSquarings() << '\t'
+             << i << endl;
     }
 
     getProfiler().report_all(3);

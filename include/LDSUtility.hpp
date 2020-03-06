@@ -59,7 +59,7 @@ private:
     typedef Ref<StaVector> RefOutVector;
 
     bool timesVector;
-    int TVSquarings;
+    int TVSquarings, squaringsUsed;
 
 public:
     LDSUtility();
@@ -70,8 +70,9 @@ public:
     int getMinSquarings();
     void useTV(bool yesOrNo) { timesVector = yesOrNo; }
     bool isTVUsed() { return timesVector; }
-    void setTVSquarings(int TVSquarings) {this->TVSquarings = TVSquarings; }
-    int getTVSquarings() {return TVSquarings; }
+    void setTVSquarings(int TVSquarings) { this->TVSquarings = TVSquarings; }
+    int getTVSquarings() { return TVSquarings; }
+    int getSquarings() { return squaringsUsed; }
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -99,7 +100,7 @@ LDSUtility<T, N>::LDSUtility()
     z2 = Matrix<T, N + 3, 1>::Zero();
 
     timesVector = false;
-    TVSquarings = -1; 
+    TVSquarings = -1;
 }
 
 // Properties about Delta
@@ -152,6 +153,7 @@ void LDSUtility<T, N>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xInit, T
     }
 
     out = res1.template block<N, 1>(0, 0);
+    squaringsUsed = expUtil1.getSquarings();
 }
 
 template <typename T, int N>
@@ -178,6 +180,7 @@ void LDSUtility<T, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& 
     }
 
     out = res2.template block<N, 1>(0, 0);
+    squaringsUsed = expUtil2.getSquarings();
 }
 
 template <typename T, int N>
@@ -202,6 +205,7 @@ void LDSUtility<T, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVe
     }
 
     out = res3.template block<N, 1>(0, 0);
+    squaringsUsed = expUtil3.getSquarings();
 }
 
 /*
@@ -237,8 +241,7 @@ private:
     DynMatrix res1all, res2all, res3all, A0, A1, A2;
 
     bool timesVector;
-    int TVSquarings;
-
+    int TVSquarings, squaringsUsed;
 
 public:
     // Would like to forbid creation without specifying a size, but it would prevent use as a class field
@@ -254,8 +257,9 @@ public:
     int getMinSquarings();
     void useTV(bool yesOrNo) { timesVector = yesOrNo; }
     bool isTVUsed() { return timesVector; }
-    void setTVSquarings(int TVSquarings) {this->TVSquarings = TVSquarings; }
-    int getTVSquarings() {return TVSquarings; }
+    void setTVSquarings(int TVSquarings) { this->TVSquarings = TVSquarings; }
+    int getTVSquarings() { return TVSquarings; }
+    int getSquarings() { return squaringsUsed; }
 
     void resize(int n);
 
@@ -316,7 +320,8 @@ void LDSUtility<T, Dynamic>::resize(int n)
 {
     this->n = n;
     timesVector = false;
-    TVSquarings = -1; 
+    TVSquarings = -1;
+    squaringsUsed = 0;
     expUtil1.resize(n + 1);
     expUtil2.resize(n + 2);
     expUtil3.resize(n + 3);
@@ -336,7 +341,7 @@ void LDSUtility<T, Dynamic>::resize(int n)
 
     // Stuff for ComputeDoubleIntegralXt
     res3.resize(n + 3, 1);
-    res3.resize(n + 3, n + 3);
+    res3all.resize(n + 3, n + 3);
     A2 = DynMatrix::Zero(n + 3, n + 3);
     z2 = DynVector::Zero(n + 3, 1);
     z2(n + 2, 0) = 1;
@@ -362,6 +367,7 @@ void LDSUtility<T, Dynamic>::ComputeXt(RefMatrix& A, RefVector& b, RefVector& xI
     }
 
     out = res1.block(0, 0, n, 1);
+    squaringsUsed = expUtil1.getSquarings();
 }
 
 template <typename T>
@@ -385,6 +391,7 @@ void LDSUtility<T, Dynamic>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVe
     }
 
     out = res2.block(0, 0, n, 1);
+    squaringsUsed = expUtil2.getSquarings();
 }
 
 template <typename T>
@@ -408,6 +415,7 @@ void LDSUtility<T, Dynamic>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b,
     }
 
     out = res3.block(0, 0, n, 1);
+    squaringsUsed = expUtil3.getSquarings();
 }
 }
 

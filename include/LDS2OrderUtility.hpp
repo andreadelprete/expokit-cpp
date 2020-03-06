@@ -1,9 +1,10 @@
 #ifndef INTEGRAL_UTILITY2
 #define INTEGRAL_UTILITY2
 
-#include "LDSUtility.hpp"
 #include <Eigen/Core>
 #include <iostream>
+#include "LDSUtility.hpp"
+
 
 using namespace Eigen;
 using namespace std;
@@ -61,7 +62,8 @@ public:
     void useTV(bool yesOrNo) { firstOrder.useTV(yesOrNo); }
     bool isTVUsed() { return firstOrder.isTVUsed(); }
     void setTVSquarings(int TVSquarings) { firstOrder.setTVSquarings(TVSquarings); }
-    int getTVSquarings() {return firstOrder.getTVSquarings(); }
+    int getTVSquarings() { return firstOrder.getTVSquarings(); }
+    int getSquarings() { return firstOrder.getSquarings(); }
 
     /**
      * Compute the value of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -257,7 +259,8 @@ public:
     void useTV(bool yesOrNo) { firstOrder.useTV(yesOrNo); }
     bool isTVUsed() { return firstOrder.isTVUsed(); }
     void setTVSquarings(int TVSquarings) { firstOrder.setTVSquarings(TVSquarings); }
-    int getTVSquarings() {return firstOrder.getTVSquarings(); }
+    int getTVSquarings() { return firstOrder.getTVSquarings(); }
+    int getSquarings() { return firstOrder.getSquarings(); }
 
     void resize(int n);
 

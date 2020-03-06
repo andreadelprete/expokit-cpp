@@ -204,11 +204,9 @@ void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
     if (delta) {
         deltaA = A - prevA;
         const double l1normDeltaA = deltaA.cwiseAbs().colwise().sum().maxCoeff();
-        // Speedup only if the difference in number of squaring is greater than 2
+        // Speedup only if the difference in number of squaring 
+        // from the complete recomputation is greater than 2
         deltaSquarings = determineSquarings(l1normDeltaA);
-
-        if (deltaSquarings < minSquarings)
-            deltaSquarings = minSquarings;
 
         deltaUsed = (squarings >= deltaSquarings);
     }
@@ -221,7 +219,7 @@ void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
         // There wuold be alias with squarings = 0, but it's not possible by logic
         metaProds[squarings] = metaProds[squarings] * ppLU.solve(numer);
     } else {
-        computeUV(A); // Pade approximant is (U+V) / (-U+V)
+        computeUV(A);
         numer = U + V;
         denom = -U + V;
         ppLU.compute(denom);
@@ -292,6 +290,10 @@ int MatrixExponential<T, N>::determineSquarings(const double l1norm)
     std::frexp(l1norm / maxnorm, &squars);
     if (squars < 0)
         squars = 0;
+
+    if(delta && squars < minSquarings)
+        squars = minSquarings;
+
     return squars;
 }
 
@@ -318,6 +320,7 @@ void MatrixExponential<T, N>::computeUV(const RefMatrix& A)
 template <typename T, int N>
 void MatrixExponential<T, N>::computeUV(const RefMatrix& A, int squarings)
 {
+    // Pade approximant is (U+V) / (-U+V)
     this->squarings = squarings;
     A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
     const double l1norm = A_scaled.cwiseAbs().colwise().sum().maxCoeff();
