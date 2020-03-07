@@ -43,6 +43,7 @@ int main()
     // DeltaX_TSOFF_TVON
     LDSUtility<double, M> dxt0v1;
     dxt0v1.useTV(true);
+    dxt0v1.setTVSquarings(5);
 
     // DeltaOFF_TSON_TVOFF
     LDS2OrderUtility<double, M> d0t1v0;
@@ -54,52 +55,53 @@ int main()
     // DeltaX_TSON_TVON
     LDS2OrderUtility<double, M> dxt1v1;
     dxt1v1.useTV(true);
+    dxt1v1.setTVSquarings(5);
 
     for (unsigned int i = 0; i < vecA.size(); ++i) {
         START_PROFILER("DeltaOFF_TSOFF_TVOFF");
         d0t0v0.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, ref);
         STOP_PROFILER("DeltaOFF_TSOFF_TVOFF");
-        stats.store("DeltaOFF_TSOFF_TVOFF_SQUARINGS", d0t0v0.getSquarings());
+        stats.store("SQUARINGS_DeltaOFF_TSOFF_TVOFF", d0t0v0.getSquarings());
 
         START_PROFILER("DeltaON__TSOFF_TVOFF");
         d1t0v0.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
         STOP_PROFILER("DeltaON__TSOFF_TVOFF");
-        stats.store("DeltaON__TSOFF_TVOFF_SQUARINGS", d1t0v0.getSquarings());
+        stats.store("SQUARINGS_DeltaON__TSOFF_TVOFF", d1t0v0.getSquarings());
         e = computeErrorIntegral(out, ref, TIMESTEP * i);
-        stats.store("DeltaON__TSOFF_TVOFF_ERROR2", e(0));
-        stats.store("DeltaON__TSOFF_TVOFF_ERRORINF", e(1));
+        stats.store("ERROR2___DeltaON__TSOFF_TVOFF", e(0));
+        stats.store("ERRORINF_DeltaON__TSOFF_TVOFF", e(1));
 
         START_PROFILER("DeltaX___TSOFF_TVON");
         dxt0v1.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
         STOP_PROFILER("DeltaX___TSOFF_TVON");
-        stats.store("DeltaX___TSOFF_TVON_SQUARINGS", dxt0v1.getSquarings());
+        stats.store("SQUARINGS_DeltaX___TSOFF_TVON", dxt0v1.getSquarings());
         e = computeErrorIntegral(out, ref, TIMESTEP * i);
-        stats.store("DeltaX___TSOFF_TVON_ERROR2", e(0));
-        stats.store("DeltaX___TSOFF_TVON_ERRORINF", e(1));
+        stats.store("ERROR2___DeltaX___TSOFF_TVON", e(0));
+        stats.store("ERRORINF_DeltaX___TSOFF_TVON", e(1));
 
         START_PROFILER("DeltaOFF_TSON__TVOFF");
         d0t1v0.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
         STOP_PROFILER("DeltaOFF_TSON__TVOFF");
-        stats.store("DeltaOFF_TSON__TVOFF_SQUARINGS", d0t1v0.getSquarings());
+        stats.store("SQUARINGS_DeltaOFF_TSON__TVOFF", d0t1v0.getSquarings());
         e = computeErrorIntegral(out, ref, TIMESTEP * i);
-        stats.store("DeltaOFF_TSON__TVOFF_ERROR2", e(0));
-        stats.store("DeltaOFF_TSON__TVOFF_ERRORINF", e(1));
+        stats.store("ERROR2___DeltaOFF_TSON__TVOFF", e(0));
+        stats.store("ERRORINF_DeltaOFF_TSON__TVOFF", e(1));
 
         START_PROFILER("DeltaON__TSON__TVOFF");
         d1t1v0.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
         STOP_PROFILER("DeltaON__TSON__TVOFF");
-        stats.store("DeltaON__TSON__TVOFF_SQUARINGS", d1t1v0.getSquarings());
+        stats.store("SQUARINGS_DeltaON__TSON__TVOFF", d1t1v0.getSquarings());
         e = computeErrorIntegral(out, ref, TIMESTEP * i);
-        stats.store("DeltaON__TSON__TVOFF_ERROR2", e(0));
-        stats.store("DeltaON__TSON__TVOFF_ERRORINF", e(1));
+        stats.store("ERROR2___DeltaON__TSON__TVOFF", e(0));
+        stats.store("ERRORINF_DeltaON__TSON__TVOFF", e(1));
 
         START_PROFILER("DeltaX___TSON__TVON");
         dxt1v1.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
         STOP_PROFILER("DeltaX___TSON__TVON");
-        stats.store("DeltaX___TSON__TVON_SQUARINGS", dxt1v1.getSquarings());
+        stats.store("SQUARINGS_DeltaX___TSON__TVON", dxt1v1.getSquarings());
         e = computeErrorIntegral(out, ref, TIMESTEP * i);
-        stats.store("DeltaX___TSON__TVON_ERROR2", e(0));
-        stats.store("DeltaX___TSON__TVON_ERRORINF", e(1));
+        stats.store("ERROR2___DeltaX___TSON__TVON", e(0));
+        stats.store("ERRORINF_DeltaX___TSON__TVON", e(1));
     }
 
     // Finding optimal value of vec_squarings for Times Vector (TV)

@@ -16,7 +16,7 @@ using namespace expokit;
     - Speed against standard and official methods
 */
 
-#define MANY 100
+#define MANY 500
 
 #define N 4
 #define M N * 3 * 2
