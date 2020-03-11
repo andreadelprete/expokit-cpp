@@ -16,6 +16,8 @@ ADD_RUN(runDelta "eigen3")
 ADD_RUN(runBench "eigen3")
 ADD_RUN(runExample "eigen3")
 ADD_RUN(runTSVExample "eigen3")
+ADD_RUN(runFindMinSquarings "eigen3")
+ADD_RUN(runFindVecSquarings "eigen3")
 
 
 
