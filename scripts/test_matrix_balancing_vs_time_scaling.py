@@ -44,7 +44,7 @@ def expm(A, use_exact_onenorm="auto", verbose=False):
 def print_error(x_exact, x_approx):
     print("Approximation error: ", np.max(np.abs(x_exact-x_approx).A1 / np.abs(x_exact).A1))
     
-def compute_x_T(A, a, x0, T):
+def compute_x_T(A, a, x0, T, balance=False):
     n = A.shape[0]
     C = matlib.zeros((n+1, n+1))
     C[0:n,     0:n] = A
@@ -52,7 +52,19 @@ def compute_x_T(A, a, x0, T):
     z0 = matlib.zeros((n+1, 1))
     z0[:n, 0] = x0
     z0[-1, 0] = 1.0
-    e_TC = expm(T*C, verbose=True)
+    if balance:
+        C_bal, D = matrix_balance(T*C, permute=False)
+        D = np.asmatrix(D)
+        C_bal = np.asmatrix(C_bal)
+        Dinv = np.asmatrix(np.linalg.inv(D))
+        e_TC_bal = expm(C_bal, verbose=True)
+#        print("A\n", T*C)
+#        print("Ab\n", C_bal)
+#        print("log(D)\n", np.log(np.diag(D)))
+        e_TC = D*e_TC_bal*Dinv
+    else:
+        e_TC = expm(T*C, verbose=True)
+    
     z = e_TC*z0
     x_T = z[:n, 0]
     return x_T
@@ -99,7 +111,7 @@ if __name__ == '__main__':
     x0 = matlib.rand((n, 1))
     a = matlib.rand((n, 1))
     a[:n2] = 0.0
-    a[:] = 0.0      # TEMP
+#    a[:] = 0.0      # TEMP
     U = matlib.rand((n2, n2))
     Upsilon = U*U.T
     K = matlib.eye(n2)*stiffness
@@ -126,12 +138,7 @@ if __name__ == '__main__':
     print("Time to solve linear system", 1e3*time_solve)
     print("")
     
-    A_bal, D = matrix_balance(T*A, permute=False)
-    print("A\n", A)
-    print("Ab\n", A_bal)
-    print("log(D)\n", np.log(np.diag(D)))
-    Dinv = np.linalg.inv(D)
-    x_T_bal = D * compute_x_T(A_bal, a, Dinv*x0, 1)
+    x_T_bal = compute_x_T(A, a, x0, T, balance=True)
 
     Kbar = Upsilon*K
     Bbar = Upsilon*B
