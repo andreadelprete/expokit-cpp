@@ -51,7 +51,7 @@ private:
     typedef Ref<VectorType> RefOutVector;
 
     MatrixType U, V, numer, denom;
-    MatrixType A_scaled, A2, A4, A6, A8, tmp, eye, tmp2;
+    MatrixType A_scaled, A2, A4, A6, A8, tmp, eye, tmp2, D;
     VectorType v_tmp;
     PartialPivLU<MatrixType> ppLU;
     int squarings;
@@ -93,6 +93,9 @@ public:
      */
     void computeExpTimesVector(RefMatrix A, RefVector v, RefOutVector out, int vec_squarings = -1);
     //void computeExpTimesVector(RefVector v, , int vec_squarings = -1);
+
+    void balancing1(RefOutMatrix A);
+    void balancing2(RefOutMatrix A);
 
 private:
     void init(int n);
@@ -176,7 +179,7 @@ void MatrixExponential<T, N>::init(int n)
     squarings = 0;
     minSquarings = DEFAULT_MIN_SQUARINGS;
     delta = false;
-    for(int i = 0; i < METAPROD_SIZE; i++) {
+    for (int i = 0; i < METAPROD_SIZE; i++) {
         metaProds[i].resize(n, n);
     }
     resetDelta();
@@ -204,7 +207,7 @@ void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
     if (delta) {
         deltaA = A - prevA;
         const double l1normDeltaA = deltaA.cwiseAbs().colwise().sum().maxCoeff();
-        // Speedup only if the difference in number of squaring 
+        // Speedup only if the difference in number of squaring
         // from the complete recomputation is greater than 2
         deltaSquarings = determineSquarings(l1normDeltaA);
 
@@ -291,7 +294,7 @@ int MatrixExponential<T, N>::determineSquarings(const double l1norm)
     if (squars < 0)
         squars = 0;
 
-    if(delta && squars < minSquarings)
+    if (delta && squars < minSquarings)
         squars = minSquarings;
 
     return squars;
@@ -411,6 +414,66 @@ void MatrixExponential<T, N>::matrix_exp_pade13(const RefMatrix& A)
     tmp = b[12] * A6 + b[10] * A4 + b[8] * A2;
     V.noalias() = A6 * tmp;
     V += b[6] * A6 + b[4] * A4 + b[2] * A2 + b[0] * eye;
+}
+
+template <typename T, int N>
+void MatrixExponential<T, N>::balancing1(RefOutMatrix A)
+{
+    D = MatrixType::Identity(size, size);
+
+    T c, r, f;
+
+    for (int k = 0; k < 100; ++k) {
+        for (int i = 0; i < size; ++i) {
+            // I'm sorry it should be the norm excluding the diagonal elements
+            c = A.block(0, i, size, 1).norm();
+            r = A.block(i, 0, 1, size).norm();
+            f = sqrt(r / c);
+
+            D(i, i) = f * D(i, i);
+            A.block(0, i, size, 1) = f * A.block(0, i, size, 1);
+            A.block(i, 0, 1, size) = A.block(i, 0, 1, size) / f;
+        }
+    }
+}
+
+template <typename T, int N>
+void MatrixExponential<T, N>::balancing2(RefOutMatrix A)
+{
+    D = MatrixType::Identity(size, size);
+
+    T c, r, s, f;
+    bool converged = false;
+
+    while (!converged) {
+        converged = true;
+
+        for (int i = 0; i < size; ++i) {
+            c = A.block(0, i, size, 1).template lpNorm<1>();
+            r = A.block(i, 0, 1, size).template lpNorm<1>();
+            s = c * c + r * r;
+            f = 1;
+
+            while (c < r / 2) {
+                c = c * 2;
+                r = r / 2;
+                f = f * 2;
+            }
+
+            while (c >= r * 2) {
+                c = c / 2;
+                r = r * 2;
+                f = f / 2;
+            }
+
+            if (c * c + r * r < 0.95 * s) {
+                converged = false;
+                D(i, i) = f * D(i, i);
+                A.block(0, i, size, 1) = f * A.block(0, i, size, 1);
+                A.block(i, 0, 1, size) = A.block(i, 0, 1, size) / f;
+            }
+        }
+    }
 }
 
 } // end namespace Eigen

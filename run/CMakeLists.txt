@@ -20,6 +20,9 @@ ADD_RUN(runFindMinSquarings "eigen3")
 ADD_RUN(runFindVecSquarings "eigen3")
 
 
+ADD_RUN(runBalancing "eigen3")
+
+
 
 
 

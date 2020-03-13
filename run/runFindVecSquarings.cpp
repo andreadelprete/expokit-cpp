@@ -65,4 +65,8 @@ int main()
     }
     // The magic number seems to be 5 for dxt0v1
     // Completely irrelevant for dxt1v1
+
+    // Print out results
+    getProfiler().report_all(3);
+    stats.report_all();
 }
