@@ -83,6 +83,7 @@ public:
      * Compute the value of the integral of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
     void ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out);
+    void BalancedComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out);
 
     /**
      * Compute the value of the double integral of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -176,6 +177,34 @@ void LDSUtility<T, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& 
         expUtil2.computeExpTimesVector(A1, z1, res2, TVSquarings);
     } else {
         expUtil2.compute(A1, res2all);
+        res2.noalias() = res2all * z1;
+    }
+
+    out = res2.template block<N, 1>(0, 0);
+    squaringsUsed = expUtil2.getSquarings();
+}
+
+template <typename T, int N>
+void LDSUtility<T, N>::BalancedComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
+{
+    // Building augmented state x0
+    x0 << xInit, 1;
+
+    // Building aumented matrix A1
+    A1.template block<N, N>(0, 0) = A;
+    A1.template block<N, 1>(0, N) = b;
+    A1.template block<N + 1, 1>(0, N + 1) = x0;
+    A1 *= step;
+
+    // Vector z
+    z1(N + 1, 0) = 1;
+
+    // Matrix exponential and extracting the interesting result
+    if (timesVector) {
+        expUtil2.balanceComputeExpTimesVector(A1, z1, res2, TVSquarings);
+    } else {
+        expUtil2.balanceCompute(A1, res2all);
+        // cout << res2all << endl;
         res2.noalias() = res2all * z1;
     }
 

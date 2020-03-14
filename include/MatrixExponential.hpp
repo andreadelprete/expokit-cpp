@@ -50,9 +50,8 @@ private:
     typedef Ref<MatrixType> RefOutMatrix;
     typedef Ref<VectorType> RefOutVector;
 
-    MatrixType U, V, numer, denom;
-    MatrixType A_scaled, A2, A4, A6, A8, tmp, eye, tmp2, D;
-    VectorType v_tmp;
+    MatrixType U, V, numer, denom, A_scaled, A2, A4, A6, A8, tmp, eye, tmp2, D, Dinv, Abal;
+    VectorType v_tmp, vTmp1, vTmp2;
     PartialPivLU<MatrixType> ppLU;
     int squarings;
 
@@ -79,7 +78,8 @@ public:
 
     /** Compute the exponential of the given matrix arg and writes it in result.
      */
-    void compute(RefMatrix A, RefOutMatrix out);
+    void compute(RefMatrix& A, RefOutMatrix out);
+    void balanceCompute(RefMatrix& A, RefOutMatrix out);
 
     /** Compute the product between the exponential of the given matrix arg and the given
      * vector v. The result is written it the output variable result.
@@ -91,55 +91,56 @@ public:
      * automatically computed, but it may not be the best one, so if the user wants to achieve
      * maximum speed, she/he should test different values of vec_squarings.
      */
-    void computeExpTimesVector(RefMatrix A, RefVector v, RefOutVector out, int vec_squarings = -1);
+    void computeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings = -1);
+    void balanceComputeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings);
     //void computeExpTimesVector(RefVector v, , int vec_squarings = -1);
-
-    void balancing1(RefOutMatrix A);
-    void balancing2(RefOutMatrix A);
 
 private:
     void init(int n);
 
+    void balancing1(RefMatrix& A);
+    void balancing2(RefMatrix& A);
+
     int determineSquarings(const double l1norm);
 
-    void computeUV(const RefMatrix& A);
+    void computeUV(RefMatrix& A);
     // Overloading that does not compute squarings inside
-    void computeUV(const RefMatrix& A, int squarings);
+    void computeUV(RefMatrix& A, int squarings);
 
     /** \brief Compute the (3,3)-Pad&eacute; approximant to the exponential.
     *
     *  After exit, \f$ (V+U)(V-U)^{-1} \f$ is the Pad&eacute;
     *  approximant of \f$ \exp(A) \f$ around \f$ A = 0 \f$.
     */
-    void matrix_exp_pade3(const RefMatrix& A);
+    void matrix_exp_pade3(RefMatrix& A);
 
     /** \brief Compute the (5,5)-Pad&eacute; approximant to the exponential.
     *
     *  After exit, \f$ (V+U)(V-U)^{-1} \f$ is the Pad&eacute;
     *  approximant of \f$ \exp(A) \f$ around \f$ A = 0 \f$.
     */
-    void matrix_exp_pade5(const RefMatrix& A);
+    void matrix_exp_pade5(RefMatrix& A);
 
     /** \brief Compute the (7,7)-Pad&eacute; approximant to the exponential.
     *
     *  After exit, \f$ (V+U)(V-U)^{-1} \f$ is the Pad&eacute;
     *  approximant of \f$ \exp(A) \f$ around \f$ A = 0 \f$.
     */
-    void matrix_exp_pade7(const RefMatrix& A);
+    void matrix_exp_pade7(RefMatrix& A);
 
     /** \brief Compute the (9,9)-Pad&eacute; approximant to the exponential.
     *
     *  After exit, \f$ (V+U)(V-U)^{-1} \f$ is the Pad&eacute;
     *  approximant of \f$ \exp(A) \f$ around \f$ A = 0 \f$.
     */
-    void matrix_exp_pade9(const RefMatrix& A);
+    void matrix_exp_pade9(RefMatrix& A);
 
     /** \brief Compute the (13,13)-Pad&eacute; approximant to the exponential.
     *
     *  After exit, \f$ (V+U)(V-U)^{-1} \f$ is the Pad&eacute;
     *  approximant of \f$ \exp(A) \f$ around \f$ A = 0 \f$.
     */
-    void matrix_exp_pade13(const RefMatrix& A);
+    void matrix_exp_pade13(RefMatrix& A);
 };
 
 template <typename T, int N>
@@ -173,9 +174,14 @@ void MatrixExponential<T, N>::init(int n)
     tmp.resize(n, n);
     tmp2.resize(n, n);
     A_scaled.resize(n, n);
+    D.resize(n, n);
+    Dinv.resize(n, n);
+    Abal.resize(n, n);
     eye = MatrixType::Identity(n, n);
     ppLU = PartialPivLU<MatrixType>(n);
     v_tmp.resize(n);
+    vTmp1.resize(n);
+    vTmp2.resize(n);
     squarings = 0;
     minSquarings = DEFAULT_MIN_SQUARINGS;
     delta = false;
@@ -200,12 +206,13 @@ void MatrixExponential<T, N>::resetDelta()
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
+void MatrixExponential<T, N>::compute(RefMatrix& A, RefOutMatrix out)
 {
     deltaUsed = false;
     int deltaSquarings;
     if (delta) {
         deltaA = A - prevA;
+        // TODO think about directly the method for the 1 norm
         const double l1normDeltaA = deltaA.cwiseAbs().colwise().sum().maxCoeff();
         // Speedup only if the difference in number of squaring
         // from the complete recomputation is greater than 2
@@ -239,7 +246,26 @@ void MatrixExponential<T, N>::compute(RefMatrix A, RefOutMatrix out)
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix A, RefVector v, RefOutVector out, int vec_squarings)
+void MatrixExponential<T, N>::balanceCompute(RefMatrix& A, RefOutMatrix out)
+{
+    balancing2(A);
+    // std::cout << Abal << std::endl;
+    computeUV(Abal);
+    numer = U + V;
+    denom = -U + V;
+    ppLU.compute(denom);
+    metaProds[squarings] = ppLU.solve(numer);
+
+    for (int i = squarings; i > 0; --i) {
+        metaProds[i - 1].noalias() = metaProds[i] * metaProds[i];
+    }
+
+    tmp.noalias() = D * metaProds[0];
+    out.noalias() = tmp * Dinv;
+}
+
+template <typename T, int N>
+void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings)
 {
     computeUV(A); // Pade approximant is (U+V) / (-U+V)
     numer = U + V;
@@ -286,6 +312,16 @@ void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix A, RefVector v, Re
 }
 
 template <typename T, int N>
+void MatrixExponential<T, N>::balanceComputeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings)
+{
+    balancing2(A);
+    vTmp1.noalias() = Dinv * v;
+    // std::cout << v << std::endl;
+    computeExpTimesVector(Abal, vTmp1, vTmp2, vec_squarings);
+    out.noalias() = D * vTmp2;
+}
+
+template <typename T, int N>
 int MatrixExponential<T, N>::determineSquarings(const double l1norm)
 {
     const double maxnorm = 5.371920351148152;
@@ -301,7 +337,7 @@ int MatrixExponential<T, N>::determineSquarings(const double l1norm)
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::computeUV(const RefMatrix& A)
+void MatrixExponential<T, N>::computeUV(RefMatrix& A)
 {
     const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
     squarings = 0;
@@ -321,7 +357,7 @@ void MatrixExponential<T, N>::computeUV(const RefMatrix& A)
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::computeUV(const RefMatrix& A, int squarings)
+void MatrixExponential<T, N>::computeUV(RefMatrix& A, int squarings)
 {
     // Pade approximant is (U+V) / (-U+V)
     this->squarings = squarings;
@@ -341,7 +377,7 @@ void MatrixExponential<T, N>::computeUV(const RefMatrix& A, int squarings)
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::matrix_exp_pade3(const RefMatrix& A)
+void MatrixExponential<T, N>::matrix_exp_pade3(RefMatrix& A)
 {
     //    typedef typename Eigen::internal::NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
@@ -353,7 +389,7 @@ void MatrixExponential<T, N>::matrix_exp_pade3(const RefMatrix& A)
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::matrix_exp_pade5(const RefMatrix& A)
+void MatrixExponential<T, N>::matrix_exp_pade5(RefMatrix& A)
 {
     //    typedef typename NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
@@ -366,7 +402,7 @@ void MatrixExponential<T, N>::matrix_exp_pade5(const RefMatrix& A)
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::matrix_exp_pade7(const RefMatrix& A)
+void MatrixExponential<T, N>::matrix_exp_pade7(RefMatrix& A)
 {
     //    typedef typename NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
@@ -380,7 +416,7 @@ void MatrixExponential<T, N>::matrix_exp_pade7(const RefMatrix& A)
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::matrix_exp_pade9(const RefMatrix& A)
+void MatrixExponential<T, N>::matrix_exp_pade9(RefMatrix& A)
 {
     //    typedef typename NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
@@ -396,7 +432,7 @@ void MatrixExponential<T, N>::matrix_exp_pade9(const RefMatrix& A)
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::matrix_exp_pade13(const RefMatrix& A)
+void MatrixExponential<T, N>::matrix_exp_pade13(RefMatrix& A)
 {
     //    typedef typename NumTraits<typename traits<MatrixType>::Scalar>::Real RealScalar;
     typedef double RealScalar;
@@ -417,30 +453,38 @@ void MatrixExponential<T, N>::matrix_exp_pade13(const RefMatrix& A)
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::balancing1(RefOutMatrix A)
+void MatrixExponential<T, N>::balancing1(RefMatrix& A)
 {
     D = MatrixType::Identity(size, size);
+    Dinv = MatrixType::Identity(size, size);
+
+    Abal = A; // Copy necessary
 
     T c, r, f;
 
     for (int k = 0; k < 100; ++k) {
         for (int i = 0; i < size; ++i) {
             // I'm sorry it should be the norm excluding the diagonal elements
-            c = A.block(0, i, size, 1).norm();
-            r = A.block(i, 0, 1, size).norm();
+            c = Abal.col(i).norm();
+            r = Abal.row(i).norm();
             f = sqrt(r / c);
 
             D(i, i) = f * D(i, i);
-            A.block(0, i, size, 1) = f * A.block(0, i, size, 1);
-            A.block(i, 0, 1, size) = A.block(i, 0, 1, size) / f;
+            Dinv(i, i) = Dinv(i, i) / f;
+
+            Abal.col(i) = f * Abal.col(i);
+            Abal.row(i) = Abal.row(i) / f;
         }
     }
 }
 
 template <typename T, int N>
-void MatrixExponential<T, N>::balancing2(RefOutMatrix A)
+void MatrixExponential<T, N>::balancing2(RefMatrix& A)
 {
     D = MatrixType::Identity(size, size);
+    Dinv = MatrixType::Identity(size, size);
+
+    Abal = A;
 
     T c, r, s, f;
     bool converged = false;
@@ -449,18 +493,18 @@ void MatrixExponential<T, N>::balancing2(RefOutMatrix A)
         converged = true;
 
         for (int i = 0; i < size; ++i) {
-            c = A.block(0, i, size, 1).template lpNorm<1>();
-            r = A.block(i, 0, 1, size).template lpNorm<1>();
+            c = Abal.col(i).template lpNorm<1>();
+            r = Abal.row(i).template lpNorm<1>();
             s = c * c + r * r;
             f = 1;
 
-            while (c < r / 2) {
+            while (c < r / 2 && c != 0) {
                 c = c * 2;
                 r = r / 2;
                 f = f * 2;
             }
 
-            while (c >= r * 2) {
+            while (c >= r * 2 && r != 0) {
                 c = c / 2;
                 r = r * 2;
                 f = f / 2;
@@ -469,8 +513,9 @@ void MatrixExponential<T, N>::balancing2(RefOutMatrix A)
             if (c * c + r * r < 0.95 * s) {
                 converged = false;
                 D(i, i) = f * D(i, i);
-                A.block(0, i, size, 1) = f * A.block(0, i, size, 1);
-                A.block(i, 0, 1, size) = A.block(i, 0, 1, size) / f;
+                Dinv(i, i) = Dinv(i, i) / f;
+                Abal.col(i) = f * Abal.col(i);
+                Abal.row(i) = Abal.row(i) / f;
             }
         }
     }
