@@ -9,6 +9,7 @@ Given x(0) and T I want to compute:
 from __future__ import print_function
 from scipy.sparse.linalg.matfuncs import _ExpmPadeHelper, _ell, _solve_P_Q, _onenorm
 import numpy as np
+from numpy.linalg import norm
 from numpy import matlib
 from numpy.linalg import solve
 from scipy.linalg import matrix_balance
@@ -32,7 +33,7 @@ def expm(A, use_exact_onenorm="auto", verbose=False):
     # Choose smallest s>=0 such that 2**(-s) l1norm <= theta_13
     s = max(int(np.ceil(np.log2(l1norm / theta_13))), 0)
 #    s = s + _ell(2**-s * h.A, 13)
-    print("Number of squarings", s, ". L-1 norm", l1norm)
+    print("Number of squarings", s, ". L-1 norm %.3f"%l1norm)
     U, V = h.pade13_scaled(s)
     X = _solve_P_Q(U, V)
     # X = r_13(A)^(2^s) by repeated squaring.
@@ -40,11 +41,92 @@ def expm(A, use_exact_onenorm="auto", verbose=False):
         X = X.dot(X)
     return X
 
+def new_balance(A, max_iter=None):
+    n = A.shape[0]
+    assert(A.shape[1]==n)
+    B = np.copy(A)  # balanced matrix
+    D = np.ones(n)  # diagonal elements of similarity transformation
+
+    # the (i,j) element of cNew is the new 1-norm of column j of the balanced 
+    # matrix you would get modifying element i of D
+    cNew = np.zeros((n,n))    
+
+    # each element of v contains the new 1-norm of balanced matrix you would
+    # get if you modified the corresponding element of D
+    v = np.zeros(n) 
+    
+    converged = False
+    # compute the 1-norm of each column
+    c = norm(B, 1, axis=0)
+    if(max_iter is None):
+        max_iter = n*n
+        
+    for it in range(max_iter):        
+        # find the column with largest norm
+        jMax = np.argmax(c)
+        
+#        print("\nIter %d |B|=%.1f"%(it, c[jMax]))
+#        print("c =", c.T)
+        
+        # compute the hypothetical new 1-norms of B
+        vMin = 10*c[jMax]
+        iMin = 0
+        for k in range(n):
+            if(k==jMax):
+                for kk in range(n):
+                    cNew[jMax, kk] = c[kk]+abs(B[jMax,kk])
+                cNew[jMax, jMax] = 0.5*c[jMax]
+                v[jMax] = np.max(cNew[jMax,:])
+            else:
+                cNew[k,:] = c
+                cNew[k,k] *= 2.0
+                cNew[k,jMax] -= 0.5*B[k,jMax]
+                v[k] = np.max(cNew[k,:])
+            
+            if(v[k] < vMin):
+                vMin = v[k]
+                iMin = k
+        
+#        print("v =", v.T)
+#        print("iMin=%d, vMin=%.1f"%(iMin, vMin))
+        
+        # check convergence
+        if(vMin >= c[jMax]):
+            converged = True
+            break
+        
+        # pick greediest choice
+        if(iMin==jMax):
+#            print("Apply strategy 1")
+            D[iMin] *= 0.5
+            B[:,iMin] *= 0.5
+            B[iMin,:] *= 2
+        else:
+            print("Apply strategy 2")
+            D[iMin] *= 2
+            B[:,iMin] *= 2
+            B[iMin,:] *= 0.5
+            
+        c = np.copy(cNew[iMin,:])
+            
+    if(not converged):
+        print("ERROR: balancing algorithm did not converge!")
+        
+    # check that B = Dinv * A * D
+#    Dm = np.diagflat(D)
+#    Dinv = np.linalg.inv(Dm)
+#    B2 = Dinv * A * Dm
+#    print('A\n', A)
+#    print('log2(D)\n', np.log2(D).T)
+#    print('B\n', B)
+#    print('Dinv*A*D\n', B2)
+    return B, np.diagflat(D)
+            
 
 def print_error(x_exact, x_approx):
     print("Approximation error: ", np.max(np.abs(x_exact-x_approx).A1 / np.abs(x_exact).A1))
     
-def compute_x_T(A, a, x0, T, balance=False):
+def compute_x_T(A, a, x0, T, balance=None):
     n = A.shape[0]
     C = matlib.zeros((n+1, n+1))
     C[0:n,     0:n] = A
@@ -53,10 +135,14 @@ def compute_x_T(A, a, x0, T, balance=False):
     z0[:n, 0] = x0
     z0[-1, 0] = 1.0
     if balance:
-        C_bal, D = matrix_balance(T*C, permute=False)
+        if(balance=='lapack'):
+            C_bal, D = matrix_balance(T*C, permute=False)
+        else:
+            (C_bal, D) = new_balance(T*C)
         D = np.asmatrix(D)
         C_bal = np.asmatrix(C_bal)
         Dinv = np.asmatrix(np.linalg.inv(D))
+            
         e_TC_bal = expm(C_bal, verbose=True)
 #        print("A\n", T*C)
 #        print("Ab\n", C_bal)
@@ -76,7 +162,7 @@ class LD2S_Util:
     
     def setScaling(self, K):
         l1norm = _onenorm(K)
-        self.Ts = sqrt(1. / l1norm);
+        self.Ts = 2**int(np.log2(sqrt(1. / l1norm)))
 
         # Structure to scale only the latter half (speed) of xInit
         n = K.shape[0]
@@ -104,7 +190,7 @@ if __name__ == '__main__':
     import time
     N_TESTS = 1
     T = 0.01
-    n = 1*3*2
+    n = 4*3*2
     n2 = int(n/2)
     stiffness = 1e5
     damping = 1e2
@@ -127,32 +213,41 @@ if __name__ == '__main__':
     print("Eigenvalues of A:", np.sort_complex(eigvals(A)).T)
     print("")
 
-    start_time = time.time()
-    e_TA = expm(T*A)
-    time_exp = time.time()-start_time
-    print("Time to compute matrix exponential", 1e3*time_exp)
-
-    start_time = time.time()
-    A_inv_a = solve(A, a)
-    time_solve = time.time()-start_time
-    print("Time to solve linear system", 1e3*time_solve)
+#    start_time = time.time()
+#    e_TA = expm(T*A)
+#    time_exp = time.time()-start_time
+#    print("Time to compute matrix exponential", 1e3*time_exp)
+#
+#    start_time = time.time()
+#    A_inv_a = solve(A, a)
+#    time_solve = time.time()-start_time
+#    print("Time to solve linear system", 1e3*time_solve)
     print("")
     
-    x_T_bal = compute_x_T(A, a, x0, T, balance=True)
+#    (A_bal, D) = new_balance(A)
+    print("Compute expm with new balancing")
+    x_T_bal_new = compute_x_T(A, a, x0, T, balance='new')
+    
+    print("\nCompute expm with standard balancing")
+    x_T_bal = compute_x_T(A, a, x0, T, balance='lapack')
 
     Kbar = Upsilon*K
     Bbar = Upsilon*B
+    print("\nCompute expm with time scaling")
     start_time = time.time()
     x_T_ts = util.compute_x_T(Kbar, Bbar, a, x0, T)
     time_approx = time.time()-start_time
 
+    print("\nCompute expm without any balancing")
     start_time = time.time()
     x_T = compute_x_T(A, a, x0, T)
     time_exact = time.time()-start_time
-    print("Time-scaled x(T) computed in             ", 1e3*time_approx)
+    
+    print("\nTime-scaled x(T) computed in             ", 1e3*time_approx)
     print("Standard x(T) computed in                ", 1e3*time_exact)
     print_error(x_T, x_T_ts)
     print("")
     print("x standard  ", x_T.T)
     print("x TimeScaled", x_T_ts.T)
     print("x Balancing ", x_T_bal.T)
+    print("x Balancing ", x_T_bal_new.T)
