@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse.linalg.matfuncs import _ExpmPadeHelper, _solve_P_Q, _onenorm
 from math import sqrt
 from numpy import matlib
-from balanceMethods import balance_parlett, new_balance
+from balanceMethods import balance_rodney, new_balance
 
 
 class LDSUtil:
@@ -46,7 +46,7 @@ class LDSUtil:
         if balance:
             if(balance == 'lapack'):
                 #            C_bal, D = matrix_balance(T*C, permute=False)
-                C_bal, D = balance_parlett(T*C)
+                C_bal, D = balance_rodney(T*C)
             else:
                 (C_bal, D) = new_balance(T*C)
             D = np.asmatrix(D)
