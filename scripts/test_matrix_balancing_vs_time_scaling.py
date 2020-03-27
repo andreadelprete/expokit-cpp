@@ -9,8 +9,10 @@ Given x(0) and T I want to compute:
 import numpy as np
 from numpy import matlib
 from numpy.linalg import eigvals
-from LDSUtil import LDSUtil
 import time
+
+from LDSUtil import LDSUtil
+from testingStuff import testStuff
 
 
 np.set_printoptions(precision=2, linewidth=200, suppress=True)
@@ -19,6 +21,8 @@ np.set_printoptions(precision=2, linewidth=200, suppress=True)
 def print_error(x_exact, x_approx):
     print("Approximation error: ", np.max(np.abs(x_exact-x_approx).A1 / np.abs(x_exact).A1))
 
+
+testStuff()  # Avoid regression
 
 N_TESTS = 1
 T = 0.01
