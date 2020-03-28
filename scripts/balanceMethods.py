@@ -1,5 +1,6 @@
 import numpy as np
 from numpy.linalg import norm
+import math
 
 
 def balance_rodney(A):
@@ -118,5 +119,44 @@ def new_balance(A, max_iter=None):
 
     if(not converged):
         print("ERROR: balancing algorithm did not converge!")
+
+    return B, np.diagflat(D), np.diagflat(Dinv), it
+
+
+def simple_balance(A):
+    n = A.shape[0]
+    assert(A.shape[1] == n)
+    B = np.copy(A)  # balanced matrix
+    D = np.ones(n)  # diagonal elements of similarity transformation
+    Dinv = np.ones(n)  # Cheaper to compute along the way
+    rb = 2.0  # Radix base
+
+    prevNorm = norm(B, 1)
+
+    it = 0
+    warning = 0
+    while True:
+        it = it + 1
+
+        cAll = norm(B, 1, axis=0)  # Norm of all columns
+        maxI = np.argmax(cAll)  # Which column is the bigger
+        # Applying changes
+        D[maxI] /= rb
+        Dinv[maxI] *= rb
+        B[:, maxI] /= rb
+        B[maxI, :] *= rb
+
+        # Check if the norm of the matrix is better
+        nowNorm = norm(B, 1)
+
+        if math.isclose(nowNorm, prevNorm, rel_tol=0.4):
+            warning = warning + 1
+        else:
+            warning = 0
+
+        prevNorm = nowNorm
+
+        if warning > 5:
+            break  # And get out of here
 
     return B, np.diagflat(D), np.diagflat(Dinv), it
