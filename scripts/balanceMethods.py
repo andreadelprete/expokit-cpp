@@ -63,15 +63,18 @@ def new_balance(A, max_iter=None):
     converged = False
     # compute the 1-norm of each column
     c = norm(B, 1, axis=0)
+    jMax = np.argmax(c)
     if(max_iter is None):
-        max_iter = n*n
+        max_iter = 2+n*int(2+np.log2(c[jMax]))
 
     it = 0
+#    print('A\n', A)
     for it in range(max_iter):
         # find the column with largest norm
-        jMax = np.argmax(c)
-
-#        print("\nIter %d |B|=%.1f"%(it, c[jMax]))
+#        c = norm(B, 1, axis=0)
+        
+#        print("\nIter %d |B|=%.1f, jMax=%d"%(it, c[jMax], jMax))
+#        print('B[:,jMax] = ', B[:,jMax].T)
 #        print("c =", c.T)
 
         # compute the hypothetical new 1-norms of B
@@ -79,43 +82,49 @@ def new_balance(A, max_iter=None):
         iMin = 0
         for k in range(n):
             if(k == jMax):
-                cNew[jMax, :] = c + np.abs(B[jMax, :])
-                cNew[jMax, jMax] = c[jMax] / rb
-                v[jMax] = np.max(cNew[jMax, :])
+                # the elements of row jMax are multiplied by rb
+                cNew[k, :] = c + (rb-1)*np.abs(B[k, :])
+                # all elements of col jMax are divided by rb (except for the one on the diagonal)
+                cNew[k, k] = (c[k] + (rb-1)*abs(A[k,k])) / rb
+                v[k] = np.max(cNew[k, :])
             else:
-                cNew[k, :] = c
-                cNew[k, k] *= rb
-                cNew[k, jMax] -= B[k, jMax] / rb
+                # the elements of row k are divided by rb
+                cNew[k, :] = c - (rb-1)*np.abs(B[k, :])/rb
+                # the elements of column k are multiplied by rb (except for the one on the diagonal)
+                cNew[k, k] = c[k]*rb - (rb-1)*abs(A[k,k])
                 v[k] = np.max(cNew[k, :])
 
             if(v[k] < vMin):
                 vMin = v[k]
                 iMin = k
-
+#        print('cNew = \n', cNew)
 #        print("v =", v.T)
 #        print("iMin=%d, vMin=%.1f"%(iMin, vMin))
 
         # check convergence
         if(vMin >= c[jMax]):
-            # print("Balancing converged in %d iterations" % it)
+#            print("Balancing converged in %d iterations" % it)
             converged = True
             break
 
         # pick greediest choice
         if(iMin == jMax):
-            #            print("Apply strategy 1")
+#            print("Apply strategy 1")
             D[iMin] /= rb
             Dinv[iMin] *= rb
             B[:, iMin] /= rb
             B[iMin, :] *= rb
         else:
-            # print("Apply strategy 2")
+#            print("Apply strategy 2")
             D[iMin] *= rb
             Dinv[iMin] /= rb
             B[:, iMin] *= rb
             B[iMin, :] /= rb
 
+#        print('cNew[iMin] = ', cNew[iMin,:])
+#        print('cReal =      ', norm(B, 1, axis=0))
         c = np.copy(cNew[iMin, :])
+        jMax = np.argmax(c)
 
     if(not converged):
         print("ERROR: balancing algorithm did not converge!")

@@ -46,12 +46,12 @@ class LDSUtil:
         if balance:
             if(balance == 'lapack'):
                 #            C_bal, D = matrix_balance(T*C, permute=False)
-                C_bal, D = balance_rodney(T*C)
+                C_bal, D, Dinv, it = balance_rodney(T*C)
             else:
-                (C_bal, D) = new_balance(T*C)
+                C_bal, D, Dinv, it = new_balance(T*C)
             D = np.asmatrix(D)
             C_bal = np.asmatrix(C_bal)
-            Dinv = np.asmatrix(np.linalg.inv(D))
+#            Dinv = np.asmatrix(np.linalg.inv(D))
 
             e_TC_bal = self.expm(C_bal, verbose=True)
     #        print("A\n", T*C)
@@ -77,9 +77,10 @@ class LDSUtil:
         # Choose smallest s>=0 such that 2**(-s) l1norm <= theta_13
         s = max(int(np.ceil(np.log2(l1norm / theta_13))), 0)
     #    s = s + _ell(2**-s * h.A, 13)
-        print("Number of squarings", s, ". L-1 norm %.3f" % l1norm)
         U, V = h.pade13_scaled(s)
+        print("Number of squarings", s, ". L-1 norm %.3f" % l1norm)
         X = _solve_P_Q(U, V)
+        print('solve P Q done')
         # X = r_13(A)^(2^s) by repeated squaring.
         for i in range(s):
             X = X.dot(X)
