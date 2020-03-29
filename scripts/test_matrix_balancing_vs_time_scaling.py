@@ -22,11 +22,11 @@ def print_error(x_exact, x_approx):
     print("Approximation error: ", np.max(np.abs(x_exact-x_approx).A1 / np.abs(x_exact).A1))
 
 
-testStuff()  # Avoid regression
+#testStuff()  # Avoid regression
 
 N_TESTS = 1
 T = 0.01
-n = 4*3*2
+n = 1*3*2
 n2 = int(n/2)
 stiffness = 1e5
 damping = 1e2
@@ -83,7 +83,7 @@ print("\nTime-scaled x(T) computed in             ", 1e3*time_approx)
 print("Standard x(T) computed in                ", 1e3*time_exact)
 print_error(x_T, x_T_ts)
 print("")
-print("x standard  ", x_T.T)
-print("x TimeScaled", x_T_ts.T)
-print("x Balancing ", x_T_bal.T)
-print("x Balancing ", x_T_bal_new.T)
+print("x standard        ", x_T.T)
+print("x TimeScaled      ", x_T_ts.T)
+print("x Balancing LAPACK", x_T_bal.T)
+print("x Balancing NEW   ", x_T_bal_new.T)

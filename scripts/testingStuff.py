@@ -18,3 +18,6 @@ def testStuff():
     assert(math.isclose(norm(A - D @ B @ Dinv), 0.0, rel_tol=1e-5))
 
     print("The stuff you are using makes sense, go on\n")
+
+if __name__=='__main__':
+    testStuff()
