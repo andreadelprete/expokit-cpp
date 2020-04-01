@@ -71,11 +71,11 @@ def new_balance(A, max_iter=None):
 #    print('A\n', A)
     for it in range(max_iter):
         # find the column with largest norm
-#        c = norm(B, 1, axis=0)
-        
-#        print("\nIter %d |B|=%.1f, jMax=%d"%(it, c[jMax], jMax))
-#        print('B[:,jMax] = ', B[:,jMax].T)
-#        print("c =", c.T)
+        #        c = norm(B, 1, axis=0)
+
+        #        print("\nIter %d |B|=%.1f, jMax=%d"%(it, c[jMax], jMax))
+        #        print('B[:,jMax] = ', B[:,jMax].T)
+        #        print("c =", c.T)
 
         # compute the hypothetical new 1-norms of B
         vMin = 10*c[jMax]
@@ -85,13 +85,13 @@ def new_balance(A, max_iter=None):
                 # the elements of row jMax are multiplied by rb
                 cNew[k, :] = c + (rb-1)*np.abs(B[k, :])
                 # all elements of col jMax are divided by rb (except for the one on the diagonal)
-                cNew[k, k] = (c[k] + (rb-1)*abs(A[k,k])) / rb
+                cNew[k, k] = (c[k] + (rb-1)*abs(A[k, k])) / rb
                 v[k] = np.max(cNew[k, :])
             else:
                 # the elements of row k are divided by rb
                 cNew[k, :] = c - (rb-1)*np.abs(B[k, :])/rb
                 # the elements of column k are multiplied by rb (except for the one on the diagonal)
-                cNew[k, k] = c[k]*rb - (rb-1)*abs(A[k,k])
+                cNew[k, k] = c[k]*rb - (rb-1)*abs(A[k, k])
                 v[k] = np.max(cNew[k, :])
 
             if(v[k] < vMin):
@@ -103,19 +103,19 @@ def new_balance(A, max_iter=None):
 
         # check convergence
         if(vMin >= c[jMax]):
-#            print("Balancing converged in %d iterations" % it)
+            #            print("Balancing converged in %d iterations" % it)
             converged = True
             break
 
         # pick greediest choice
         if(iMin == jMax):
-#            print("Apply strategy 1")
+            #            print("Apply strategy 1")
             D[iMin] /= rb
             Dinv[iMin] *= rb
             B[:, iMin] /= rb
             B[iMin, :] *= rb
         else:
-#            print("Apply strategy 2")
+            #            print("Apply strategy 2")
             D[iMin] *= rb
             Dinv[iMin] /= rb
             B[:, iMin] *= rb
