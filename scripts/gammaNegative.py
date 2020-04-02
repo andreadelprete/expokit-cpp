@@ -1,9 +1,23 @@
 from random import randrange
 import numpy as np
 from testingStuff import testStuff
-from usefulStuff import test_matrix
+from usefulStuff import computeGains
+from balanceMethods import slow_balance
+from scipy.linalg import matrix_balance
+from numpy.linalg import norm
+
 
 testStuff()
+
+
+def testMatrixGammaNegative(A):
+    B_scipy, D1 = matrix_balance(A, permute=False)
+    B_new, D2, Dinv, it = slow_balance(A)
+
+    norm_scipy = norm(B_scipy, 1)
+    norm_new = norm(B_new, 1)
+
+    return computeGains(norm_scipy, norm_new)
 
 
 N = 4
@@ -16,15 +30,15 @@ while True:
         c = randrange(0, N)
         r = randrange(0, N)
 
-        mul = float(randrange(10e2, 10e3))  # By how much
+        mul = float(randrange(10e2, 10e5))  # By how much
 
         A[r, c] *= mul  # Do it
-    # Loop until to avoid creation of matrices that does not need balancing
 
-    gamma, squarings_gain = test_matrix(A)
+    gamma, squarings_gain = testMatrixGammaNegative(A)
 
+    # Loop until we find the case we need
     if gamma < 0:
-        break
+        pass
 
 
-print(A)
+testMatrixGammaNegative(A)

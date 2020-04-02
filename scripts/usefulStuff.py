@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import matrix_balance
-from balanceMethods import new_balance
+from balanceMethods import new_balance, slow_balance
 
 
 maxnorm = 5.371920351148152
@@ -21,11 +21,14 @@ def printStats(M, text):
 
 def test_matrix(A):
     B_scipy, D1 = matrix_balance(A, permute=False)
-    B_new, D2, Dinv, it = new_balance(A)
+    B_new, D2, Dinv, it = slow_balance(A)
+    # B_new, D2, Dinv, it = new_balance(A)
 
-    norm_new = norm(B_new, 1)
-    norm_scipy = norm(B_scipy, 1)
-    gamma = (norm_scipy - norm_new) / norm_new
-    squarings_gain = compute_squarings(norm_scipy) - compute_squarings(norm_new)
+    return computeGains(norm(B_scipy, 1), norm(B_new, 1))
+
+
+def computeGains(norm1, norm2):
+    gamma = (norm1 - norm2) / norm2
+    squarings_gain = compute_squarings(norm1) - compute_squarings(norm2)
 
     return gamma, squarings_gain
