@@ -37,10 +37,10 @@ def run_random_tests(matrix_size, n_tests):
             # Loop until to avoid creation of matrices that does not need balancing
             if norm(A, 1) > maxnorm:
                 break
-            
+
         gamma[k], squarings_gain[k] = test_matrix(A)
         if gamma[k] < 0:
-            oS = int(np.ceil(np.log2(norm(A, 1) / maxnorm)))
+            test_matrix(A)
             pass
 
     print('Matrix size = ', N)
@@ -51,7 +51,6 @@ def run_random_tests(matrix_size, n_tests):
                                                                 np.max(squarings_gain)))
     print('Percentage of negative squarings gain = ', 1e2*np.count_nonzero(squarings_gain < 0)/n_tests)
     print("#############################################################\n")
-
 
     # the histogram of the data
     plt.figure()
