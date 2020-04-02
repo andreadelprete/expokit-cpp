@@ -169,3 +169,56 @@ def simple_balance(A):
             break  # And get out of here
 
     return B, np.diagflat(D), np.diagflat(Dinv), it
+
+
+# Simplest possibly slowest way of writing new balance logic
+def slow_balance(A):
+    n = A.shape[0]
+    assert(A.shape[1] == n)
+    B = np.copy(A)  # balanced matrix
+    D = np.ones(n)  # diagonal elements of similarity transformation
+    Dinv = np.ones(n)  # Cheaper to compute along the way
+    rb = 2.0  # Radix base
+
+    v1 = np.zeros(n)
+    v2 = np.zeros(n)
+
+    it = 0
+    while True:
+        origNorm = norm(B, 1)
+
+        # Try every possible change to the transformation matrix
+        for i in range(n):
+            DTemp = np.eye(n)
+            DinvTemp = np.eye(n)
+            DTemp[i, i] = rb
+            DinvTemp[i, i] = 1 / rb
+
+            # Strategy 1
+            v1[i] = norm(DTemp @ B @ DinvTemp, 1)
+
+            # Strategy 2
+            v2[i] = norm(DinvTemp @ B @ DTemp, 1)
+
+        # Choose the best
+        strategy = bool(np.argmin(np.array([v1.min(), v2.min()])))
+
+        if origNorm > min([v1.min(), v2.min()]):  # Only if it leads to an improvement
+            if not strategy:  # Thus Strategy 1
+                k = np.argmin(v1)
+                D[k] /= rb
+                Dinv[k] *= rb
+                B[:, k] /= rb
+                B[k, :] *= rb
+            else:  # Strategy 2
+                k = np.argmin(v2)
+                D[k] *= rb
+                Dinv[k] /= rb
+                B[:, k] *= rb
+                B[k, :] /= rb
+        else:
+            break
+
+        it = it + 1
+
+    return B, np.diagflat(D), np.diagflat(Dinv), it
