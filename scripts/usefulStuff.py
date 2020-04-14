@@ -2,6 +2,7 @@ import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import matrix_balance
 from balanceMethods import new_balance  # , slow_balance
+from random import randrange
 
 
 maxnorm = 5.371920351148152
@@ -32,3 +33,18 @@ def computeGains(norm1, norm2):
     squarings_gain = compute_squarings(norm1) - compute_squarings(norm2)
 
     return gamma, squarings_gain
+
+
+def generateStiffMatrix(N):
+    A = np.random.randn(N, N)
+    Er = randrange(0, int((N**2)/2))  # How many elemnt we wanna modify
+    for r in range(0, Er):
+        # Random position
+        c = randrange(0, N)
+        r = randrange(0, N)
+
+        mul = float(randrange(10e2, 10e5))  # By how much
+
+        A[r, c] *= mul  # Do it
+
+    return A

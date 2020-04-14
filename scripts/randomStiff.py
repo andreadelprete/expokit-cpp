@@ -1,9 +1,8 @@
-from random import randrange
 import numpy as np
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
 from testingStuff import testStuff
-from usefulStuff import test_matrix, maxnorm
+from usefulStuff import test_matrix, maxnorm, generateStiffMatrix
 
 
 np.set_printoptions(precision=2, linewidth=250, suppress=True)
@@ -24,16 +23,8 @@ def run_random_tests(matrix_size, n_tests):
             print('Test', k)
 
         while True:
-            A = np.random.randn(N, N)
-            Er = randrange(0, int((N**2)/2))  # How many elemnt we wanna modify
-            for r in range(0, Er):
-                # Random position
-                c = randrange(0, N)
-                r = randrange(0, N)
+            A = generateStiffMatrix(N)
 
-                mul = float(randrange(10e3, 10e5))  # By how much
-
-                A[r, c] *= mul  # Do it
             # Loop until to avoid creation of matrices that does not need balancing
             if norm(A, 1) > maxnorm:
                 break
