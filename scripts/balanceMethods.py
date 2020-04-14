@@ -222,3 +222,75 @@ def slow_balance(A):
         it = it + 1
 
     return B, np.diagflat(D), np.diagflat(Dinv), it
+
+
+def v1v2Compute(B, rb):
+    n = B.shape[0]
+
+    v1 = np.zeros(n)
+    v2 = np.zeros(n)
+
+    # Try every possible change to the transformation matrix
+    for i in range(n):
+        DTemp = np.eye(n)
+        DinvTemp = np.eye(n)
+        DTemp[i, i] = rb
+        DinvTemp[i, i] = 1 / rb
+
+        # Strategy 1
+        v1[i] = norm(DTemp @ B @ DinvTemp, 1)
+
+        # Strategy 2
+        v2[i] = norm(DinvTemp @ B @ DTemp, 1)
+
+    return v1, v2
+
+
+def applyStrategy(B, D, Dinv, v1, v2, rb):
+    # Choose the best
+    strategy = bool(np.argmin(np.array([v1.min(), v2.min()])))
+    if not strategy:  # Thus Strategy 1
+        k = np.argmin(v1)
+        D[k] /= rb
+        Dinv[k] *= rb
+        B[:, k] /= rb
+        B[k, :] *= rb
+    else:  # Strategy 2
+        k = np.argmin(v2)
+        D[k] *= rb
+        Dinv[k] /= rb
+        B[:, k] *= rb
+        B[k, :] /= rb
+
+
+# Simplest possibly slowest way of writing new balance logic
+def slow_balance2(A):
+    n = A.shape[0]
+    assert(A.shape[1] == n)
+    B = np.copy(A)  # balanced matrix
+    D = np.ones(n)  # diagonal elements of similarity transformation
+    Dinv = np.ones(n)  # Cheaper to compute along the way
+    rb = 2.0  # Radix base
+
+    it = 0
+    while True:
+        origNorm = norm(B, 1)
+
+        v1, v2 = v1v2Compute(B, rb)
+
+        if origNorm > min([v1.min(), v2.min()]):  # Only if it leads to an improvement
+            applyStrategy(B, D, Dinv, v1, v2, rb)
+        else:
+            # Try if the second last greedy option can leed to better results
+            Bt = np.copy(A)
+            Dtinv = Dt = np.ones(n)
+            applyStrategy(Bt, Dt, Dtinv, v1, v2, rb)
+            v1t, v2t = v1v2Compute(Bt, rb)
+            if origNorm > min([v1t.min(), v2t.min()]):
+                applyStrategy(B, D, Dinv, v1, v2, rb)
+            else:
+                break
+
+        it = it + 1
+
+    return B, np.diagflat(D), np.diagflat(Dinv), it
