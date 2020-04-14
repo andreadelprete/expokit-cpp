@@ -1,4 +1,4 @@
-from balanceMethods import balance_rodney, new_balance, simple_balance, slow_balance
+from balanceMethods import balance_rodney, new_balance, simple_balance, slow_balance, slow_balance2
 import numpy as np
 from numpy.linalg import norm
 import math
@@ -18,6 +18,9 @@ def testStuff():
     assert(math.isclose(norm(A - D @ B @ Dinv), 0.0, rel_tol=1e-5))
 
     B, D, Dinv, it = slow_balance(A)
+    assert(math.isclose(norm(A - D @ B @ Dinv), 0.0, rel_tol=1e-5))
+
+    B, D, Dinv, it = slow_balance2(A)
     assert(math.isclose(norm(A - D @ B @ Dinv), 0.0, rel_tol=1e-5))
 
     print("The stuff you are using makes sense, go on\n")
