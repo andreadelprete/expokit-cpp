@@ -1,7 +1,5 @@
-from random import randrange
-import numpy as np
 from testingStuff import testStuff
-from usefulStuff import computeGains
+from usefulStuff import computeGains, generateStiffMatrix
 from balanceMethods import slow_balance, new_balance
 from scipy.linalg import matrix_balance
 from numpy.linalg import norm
@@ -56,23 +54,12 @@ A = np.array([[1.194404702374889160e+00, -1.880292268576423521e+04, 5.0365052331
 print(testMatrixGammaNegative(A))
 '''
 
-# N = 4
-
 
 def searchForGammaNegative(N):
     maxIterations = 10e3
     i = 0
     while True:
-        A = np.random.randn(N, N)
-        Er = randrange(0, int((N**2)/2))  # How many elemnt we wanna modify
-        for r in range(0, Er):
-            # Random position
-            c = randrange(0, N)
-            r = randrange(0, N)
-
-            mul = float(randrange(10e2, 10e5))  # By how much
-
-            A[r, c] *= mul  # Do it
+        A = generateStiffMatrix(N)
 
         # gamma, squarings_gain = testMatrixGammaNegative(A)
         worse, gamma, squarings_gain = testCombinedAlg(A)
