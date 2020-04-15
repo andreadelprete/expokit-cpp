@@ -281,15 +281,24 @@ def slow_balance2(A):
         if origNorm > min([v1.min(), v2.min()]):  # Only if it leads to an improvement
             applyStrategy(B, D, Dinv, v1, v2, rb)
         else:
-            # Try if the second last greedy option can leed to better results
-            Bt = np.copy(A)
-            Dtinv = Dt = np.ones(n)
-            applyStrategy(Bt, Dt, Dtinv, v1, v2, rb)
-            v1t, v2t = v1v2Compute(Bt, rb)
-            if origNorm > min([v1t.min(), v2t.min()]):
-                applyStrategy(B, D, Dinv, v1, v2, rb)
-            else:
-                break
+            # Try if the next 10 greedy options can leed to better results
+            foundSomething = False
+            for i in range(25):
+                Bt = np.copy(A)
+                Dtinv = Dt = np.ones(n)
+                applyStrategy(Bt, Dt, Dtinv, v1, v2, rb)
+                v1t, v2t = v1v2Compute(Bt, rb)
+
+                if origNorm > min([v1t.min(), v2t.min()]):
+                    foundSomething = True
+                    for k in range(i + 1):  # Apply the path found to the final solution
+                        applyStrategy(B, D, Dinv, v1, v2, rb)
+                        v1, v2 = v1v2Compute(B, rb)
+
+                    break  # Breaks from explorative for loop
+
+            if not foundSomething:
+                break  # Breaks from endless while
 
         it = it + 1
 

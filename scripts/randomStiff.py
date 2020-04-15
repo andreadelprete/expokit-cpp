@@ -29,7 +29,7 @@ def run_random_tests(matrix_size, n_tests):
             if norm(A, 1) > maxnorm:
                 break
 
-        gamma[k], squarings_gain[k] = test_matrix(A)
+        gamma[k], squarings_gain[k] = test_matrix(A)  # Be aware of what method is called here
         if gamma[k] < 0:
             test_matrix(A)
             pass
