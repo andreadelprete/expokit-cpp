@@ -22,7 +22,7 @@ def testBiggerNorm(A):
 
     test = np.sum(D3) == A.shape[0]
 
-    return oNorm < normScipy and oNorm < normComb # and not test # uncommment for infinite loop
+    return oNorm < normScipy and oNorm < normComb  # and not test # uncommment for infinite loop
 
 
 def searchForWorseCases(N):
