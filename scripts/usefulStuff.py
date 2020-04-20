@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import matrix_balance
-from balanceMethods import new_balance, slow_balance2  # , slow_balance
+from balanceMethods import new_balance  # , slow_balance2  # , slow_balance
 from random import randrange
 
 
@@ -20,12 +20,16 @@ def printStats(M, text):
     print('%20s   %10d   %10.2f' % (text, s, np.log2(l1norm)))
 
 
-def test_matrix(A):
+def test_matrix(A, gt):
     B_scipy, D1 = matrix_balance(A, permute=False)
-    B_new, D2, Dinv, it = slow_balance2(A)
-    # B_new, D2, Dinv, it = new_balance(A)
+    # B_new, D2, Dinv, it = slow_balance2(A)
+    B_new, D2, Dinv, it = new_balance(A)
 
-    return computeGains(norm(B_scipy, 1), norm(B_new, 1))
+    newNorm = norm(B_new, 1)
+
+    GT = (gt - newNorm) / newNorm
+
+    return computeGains(norm(B_scipy, 1), newNorm) + (GT, )
 
 
 def computeGains(norm1, norm2):
