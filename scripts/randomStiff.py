@@ -2,13 +2,14 @@ import numpy as np
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
 from testingStuff import testStuff
-from usefulStuff import test_matrix, maxnorm, generateStiffMatrix
+from usefulStuff import test_matrix, maxnorm  # , generateStiffMatrix
+from manageTestMatrices import james2014Generator  # , importMatrices
+import multiprocessing
+from functools import partial
 
 
 np.set_printoptions(precision=2, linewidth=250, suppress=True)
 
-MATRIX_SIZES = [2, 3, 4, 10]          # matrix size
-N_TESTS = 1000    # number of tests
 
 testStuff()
 
@@ -16,6 +17,7 @@ testStuff()
 def run_random_tests(matrix_size, n_tests):
     N = matrix_size
     gamma = np.empty(n_tests)
+    groundTs = np.empty(n_tests)
     squarings_gain = np.empty(n_tests)
 
     for k in range(0, n_tests):
@@ -23,20 +25,23 @@ def run_random_tests(matrix_size, n_tests):
             print('Test', k)
 
         while True:
-            A = generateStiffMatrix(N)
+            gt, A = james2014Generator(N)  # generateStiffMatrix(N)
 
             # Loop until to avoid creation of matrices that does not need balancing
             if norm(A, 1) > maxnorm:
                 break
 
-        gamma[k], squarings_gain[k] = test_matrix(A)  # Be aware of what method is called here
-        if gamma[k] < 0:
-            test_matrix(A)
-            pass
+        gamma[k], squarings_gain[k], groundTs[k] = test_matrix(A, gt)  # Be aware of what method is called here
+
+        # if gamma[k] < 0:
+        #     test_matrix(A)
+        #     pass
 
     print('Matrix size = ', N)
     print('Gamma min-avg-max = %7.3f  %7.3f  %7.3f' % (np.min(gamma), np.mean(gamma), np.max(gamma)))
+    print('groundTs min-avg-max = %7.3f  %7.3f  %7.3f' % (np.min(groundTs), np.mean(groundTs), np.max(groundTs)))
     print('Percentage of negative gamma = ', 1e2*np.count_nonzero(gamma < 0)/n_tests)
+    print('Percentage of negative groundTs = ', 1e2*np.count_nonzero(groundTs < 0)/n_tests)
     print('Squarings gain min-avg-max = %7.3f  %7.3f  %7.3f' % (np.min(squarings_gain),
                                                                 np.mean(squarings_gain),
                                                                 np.max(squarings_gain)))
@@ -52,15 +57,30 @@ def run_random_tests(matrix_size, n_tests):
     plt.grid(True)
 
     plt.figure()
+    n, bins, patches = plt.hist(groundTs, 30, facecolor='g', alpha=0.75)
+    plt.xlabel('Ground Truth')
+    plt.ylabel('Frequency')
+    plt.title('Difference from original norm %d' % N)
+    plt.grid(True)
+
+    plt.figure()
     n, bins, patches = plt.hist(squarings_gain, 20, facecolor='g', alpha=0.75)
     plt.xlabel('Squarings gain')
     plt.ylabel('Frequency')
     plt.title('Number of squarings gained for size %d' % N)
     plt.grid(True)
 
+    plt.show()
 
-# RANDOM TESTS
+
+MATRIX_SIZES = [4, 8, 16, 32, 64, 128, 256]  # , 512, 1024]  # matrix size
+N_TESTS = 10  # number of tests
+
 np.random.seed(19680801)  # Fixing random state for reproducibility
-for n in MATRIX_SIZES:
-    run_random_tests(n, N_TESTS)
-plt.show()
+
+# for n in MATRIX_SIZES:
+#     run_random_tests(n, N_TESTS)
+# plt.show()
+
+p = multiprocessing.Pool()
+p.map(partial(run_random_tests, n_tests=N_TESTS), MATRIX_SIZES)
