@@ -21,8 +21,8 @@ def importMatrices(path):
     return matrices
 
 
-a = importMatrices('scripts/testMatrices')
-print(a[0])
+# a = importMatrices('scripts/testMatrices')
+# print(a[0])
 
 
 def james2014Generator(N):
