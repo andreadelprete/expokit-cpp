@@ -2,7 +2,7 @@ import numpy as np
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
 from testingStuff import testStuff
-from usefulStuff import test_matrix, maxnorm  # , generateStiffMatrix
+from usefulStuff import test_matrix, test_matrix_GT, maxnorm  # , generateStiffMatrix
 from manageTestMatrices import james2014Generator, importMatrices
 import multiprocessing
 from functools import partial
@@ -31,9 +31,9 @@ def run_random_tests(matrix_size, n_tests):
             if norm(A, 1) > maxnorm:
                 break
 
-        gamma[k], squarings_gain[k], groundTs[k] = test_matrix(A, gt)  # Be aware of what method is called here
+        gamma[k], squarings_gain[k], groundTs[k] = test_matrix_GT(A, gt)  # Be aware of what method is called here
 
-    printData(gamma, squarings_gain, groundTs)
+    printData(gamma, squarings_gain, groundTs, n_tests, N)
 
 
 def analyseTheseMatrices(matrices):
@@ -50,49 +50,52 @@ def analyseTheseMatrices(matrices):
 def printData(gamma, squarings_gain, groundTs, n_tests, N):
     print('Matrix size = ', N)
     print('Gamma min-avg-max = %7.3f  %7.3f  %7.3f' % (np.min(gamma), np.mean(gamma), np.max(gamma)))
-    
+
     if groundTs is not None:
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
         print('groundTs min-avg-max = %7.3f  %7.3f  %7.3f' % (np.min(groundTs), np.mean(groundTs), np.max(groundTs)))
         print('Percentage of negative gamma = ', 1e2*np.count_nonzero(gamma < 0)/n_tests)
         print('Percentage of negative groundTs = ', 1e2*np.count_nonzero(groundTs < 0)/n_tests)
-    
+    else:
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+
     print('Squarings gain min-avg-max = %7.3f  %7.3f  %7.3f' % (np.min(squarings_gain),
                                                                 np.mean(squarings_gain),
                                                                 np.max(squarings_gain)))
     print('Percentage of negative squarings gain = ', 1e2*np.count_nonzero(squarings_gain < 0)/n_tests)
     print("#############################################################\n")
 
-    # the histogram of the data
-    plt.figure()
-    n, bins, patches = plt.hist(gamma, 30, facecolor='g', alpha=0.75)
-    plt.xlabel('Gamma')
-    plt.ylabel('Frequency')
-    plt.title('Relative gain in L1 norm for size %d' % N)
-    plt.grid(True)
+    fig.set_size_inches(15, 5)
+    fig.suptitle('Size {}, Nuber of test: {}'.format(N, n_tests))
+    fig.canvas.set_window_title('Size {}'.format(N))
+
+    n, bins, patches = ax1.hist(gamma, 30, facecolor='g', alpha=0.75)
+    ax1.set_xlabel('Gamma')
+    ax1.set_ylabel('Frequency')
+    ax1.title.set_text('Relative gain in L1 norm')
+    ax1.grid(True)
+
+    n, bins, patches = ax2.hist(squarings_gain, 20, facecolor='g', alpha=0.75)
+    ax2.set_xlabel('Squarings gain')
+    ax2.set_ylabel('Frequency')
+    ax2.title.set_text('Number of squarings gained')
+    ax2.grid(True)
 
     if (groundTs is not None):
-        plt.figure()
-        n, bins, patches = plt.hist(groundTs, 30, facecolor='g', alpha=0.75)
-        plt.xlabel('Ground Truth')
-        plt.ylabel('Frequency')
-        plt.title('Difference from original norm %d' % N)
-        plt.grid(True)
-
-    plt.figure()
-    n, bins, patches = plt.hist(squarings_gain, 20, facecolor='g', alpha=0.75)
-    plt.xlabel('Squarings gain')
-    plt.ylabel('Frequency')
-    plt.title('Number of squarings gained for size %d' % N)
-    plt.grid(True)
+        n, bins, patches = ax3.hist(groundTs, 30, facecolor='g', alpha=0.75)
+        ax3.set_xlabel('Ground Truth')
+        ax3.set_ylabel('Frequency')
+        ax3.title.set_text('Difference from original norm')
+        ax3.grid(True)
 
     plt.show()
 
 
-whatToDo = False
+whatToDo = True
 
 if whatToDo:
     # Section with tests on generated matrices
-    MATRIX_SIZES = [4, 8, 16, 32, 64, 128, 256]  # , 512, 1024]  # matrix size
+    MATRIX_SIZES = [4, 8, 16, 32, 64, 128]  # , 256]  # , 512, 1024]  # matrix size
     N_TESTS = 10  # number of tests
 
     np.random.seed(19680801)  # Fixing random state for reproducibility
