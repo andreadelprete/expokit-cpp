@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import matrix_balance
-from balanceMethods import new_balance  # , slow_balance2  # , slow_balance
+from balanceMethods import new_balance
 from random import randrange
 
 
@@ -28,16 +28,18 @@ def test_matrix(A):
     return computeGains(norm(B_scipy, 1), norm(B_new, 1))
 
 
-def test_matrix_GT(A, gt):
+def test_matrix_GT(A, gt, balanceAlg):
     B_scipy, D1 = matrix_balance(A, permute=False)
     # B_new, D2, Dinv, it = slow_balance2(A)
-    B_new, D2, Dinv, it = new_balance(A)
+    B_new, D2, Dinv, it = balanceAlg(A)
 
+    scipyNorm = norm(B_scipy, 1)
     newNorm = norm(B_new, 1)
 
-    GT = (gt - newNorm) / newNorm
+    gamma = (gt - scipyNorm) / scipyNorm
+    squarings_gain = compute_squarings(norm(A, 1)) - compute_squarings(scipyNorm)
 
-    return computeGains(norm(B_scipy, 1), newNorm) + (GT, )
+    return computeGains(scipyNorm, newNorm) + (gamma, squarings_gain)
 
 
 def computeGains(norm1, norm2):
