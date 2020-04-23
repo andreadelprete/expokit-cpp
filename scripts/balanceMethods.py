@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.linalg import norm
 import math
+from scipy.linalg import matrix_balance
 
 
 def balance_rodney(A):
@@ -130,6 +131,21 @@ def new_balance(A, max_iter=None):
         print("ERROR: balancing algorithm did not converge!")
 
     return B, np.diagflat(D), np.diagflat(Dinv), it
+
+
+def combinedOldNew(A):
+    oNorm = norm(A, 1)
+
+    BScipy, D1 = matrix_balance(A, permute=False)
+    normScipy = norm(BScipy, 1)
+
+    # Because if the original balance does worst, also the new algorithm is spoiled
+    if oNorm < normScipy:
+        BNew, D2, D2inv, it = new_balance(A)
+    else:
+        BNew, D2, D2inv, it = new_balance(BScipy)
+
+    return BNew, D2, D2inv, it
 
 
 def simple_balance(A):

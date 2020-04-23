@@ -5,3 +5,4 @@ cmake-build-release/
 .directory
 *.tsv
 __pycache__/
+*.png
