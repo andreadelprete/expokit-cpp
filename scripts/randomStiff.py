@@ -20,14 +20,14 @@ def run_random_tests(matrix_size, n_tests=None):
     N = matrix_size
     # Do less test the bigger the matrix is
     if n_tests is None:
-        n_tests = 10240 // N
+        n_tests = 102400 // N
     gamma = np.empty((n_tests, 2))
     groundTs = np.empty((n_tests, 2))
     squarings_gain = np.empty((n_tests, 2))
     squarings_gain_GT = np.empty((n_tests, 2))
 
     for k in range(0, n_tests):
-        if(k % 500 == 0 and k is not 0):
+        if(k % 500 == 0 and k != 0):
             print('Test {} for dimension {}'.format(k, N))
 
         while True:
@@ -86,9 +86,9 @@ def printData(title, gamma, squarings_gain, groundTs, squarings_gain_GT, n_tests
     ax1.grid(True)
 
     n, bins, patches = ax2.hist(squarings_gain, 20, facecolor='g', alpha=0.75)
-    ax2.set_xlabel('Squarings gain')
+    ax2.set_xlabel('Squarings gained')
     ax2.set_ylabel('Frequency')
-    ax2.title.set_text('Number of squarings gained')
+    ax2.title.set_text('Squarings gain wrt Rodney balance')
     ax2.grid(True)
 
     if (groundTs is not None):
@@ -99,9 +99,9 @@ def printData(title, gamma, squarings_gain, groundTs, squarings_gain_GT, n_tests
         ax3.grid(True)
 
         n, bins, patches = ax4.hist(squarings_gain_GT, 30, facecolor='g', alpha=0.75)
-        ax4.set_xlabel('Squarings gain')
+        ax4.set_xlabel('Squarings gained')
         ax4.set_ylabel('Frequency')
-        ax4.title.set_text('Number of squarings gained')
+        ax4.title.set_text('Squarings gain wrt Ground Truth')
         ax4.grid(True)
 
     # plt.show()
@@ -120,7 +120,7 @@ if whatToDo:
         p = multiprocessing.Pool(psutil.cpu_count(logical=False))
         p.map(partial(run_random_tests), reversed(MATRIX_SIZES))
     else:
-        run_random_tests(4)
+        run_random_tests(4, 1000)
 
 # Section with tests on Toolbox matrices
 else:
