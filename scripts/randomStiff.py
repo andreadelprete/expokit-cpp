@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.linalg import norm
-import matplotlib.pyplot as plt
 from testingStuff import testStuff
 from usefulStuff import test_matrix, test_matrix_GT, maxnorm  # , generateStiffMatrix
 from manageTestMatrices import james2014Generator, importMatrices
@@ -8,11 +7,11 @@ import multiprocessing
 from functools import partial
 from balanceMethods import new_balance, combinedOldNew
 import psutil  # Used to get number of cores, physical instead of logical
+from plotStuff import printData
+from datetime import datetime
 
-
+startTime = datetime.now()
 np.set_printoptions(precision=2, linewidth=250, suppress=True)
-
-
 testStuff()
 
 
@@ -41,8 +40,14 @@ def run_random_tests(matrix_size, n_tests=None):
         gamma[k][0], squarings_gain[k][0], groundTs[k][0], squarings_gain_GT[k][0] = test_matrix_GT(A, gt, new_balance)
         gamma[k][1], squarings_gain[k][1], groundTs[k][1], squarings_gain_GT[k][1] = test_matrix_GT(A, gt, combinedOldNew)
 
-    printData("NB", gamma[:, 0], squarings_gain[:, 0], groundTs[:, 0], squarings_gain_GT[:, 0], n_tests, N)
-    printData("NBComb", gamma[:, 1], squarings_gain[:, 1], groundTs[:, 1], squarings_gain_GT[:, 1], n_tests, N)
+    # Saving results of multi-hour simulation
+    np.savetxt('scripts/resultsData/gamma{}.tsv'.format(N), gamma, delimiter='\t')
+    np.savetxt('scripts/resultsData/squarings_gain{}.tsv'.format(N), squarings_gain, delimiter='\t')
+    np.savetxt('scripts/resultsData/groundTs{}.tsv'.format(N), groundTs, delimiter='\t')
+    np.savetxt('scripts/resultsData/squarings_gain_GT{}.tsv'.format(N), squarings_gain_GT, delimiter='\t')
+
+    # printData("NB", gamma[:, 0], squarings_gain[:, 0], groundTs[:, 0], squarings_gain_GT[:, 0], N)
+    # printData("NBComb", gamma[:, 1], squarings_gain[:, 1], groundTs[:, 1], squarings_gain_GT[:, 1], N)
 
 
 def analyseTheseMatrices(matrices):
@@ -53,63 +58,13 @@ def analyseTheseMatrices(matrices):
     for k in range(0, howMany):
         gamma[k], squarings_gain[k] = test_matrix(matrices[k])
 
-    printData("Toolbox Matrices", gamma, squarings_gain, None, None, howMany, matrices[0].shape[0])
+    printData("Toolbox Matrices", gamma, squarings_gain, None, None, matrices[0].shape[0])
 
-
-def printData(title, gamma, squarings_gain, groundTs, squarings_gain_GT, n_tests, N):
-    print('Matrix size = ', N)
-    print('Gamma min-avg-max = %7.3f  %7.3f  %7.3f' % (np.min(gamma), np.mean(gamma), np.max(gamma)))
-
-    if groundTs is not None and squarings_gain_GT is not None:
-        fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4)
-        fig.set_size_inches(20, 4)
-        print('groundTs min-avg-max = %7.3f  %7.3f  %7.3f' % (np.min(groundTs), np.mean(groundTs), np.max(groundTs)))
-        print('Percentage of negative gamma = ', 1e2*np.count_nonzero(gamma < 0)/n_tests)
-        print('Percentage of negative groundTs = ', 1e2*np.count_nonzero(groundTs < 0)/n_tests)
-    else:
-        fig, (ax1, ax2) = plt.subplots(1, 2)
-        fig.set_size_inches(15, 5)
-
-    print('Squarings gain min-avg-max = %7.3f  %7.3f  %7.3f' % (np.min(squarings_gain),
-                                                                np.mean(squarings_gain),
-                                                                np.max(squarings_gain)))
-    print('Percentage of negative squarings gain = ', 1e2*np.count_nonzero(squarings_gain < 0)/n_tests)
-    print("#############################################################\n")
-
-    fig.suptitle('{} Size {}, Number of test: {}'.format(title, N, n_tests))
-    fig.canvas.set_window_title('{}-{}'.format(title, N))
-
-    n, bins, patches = ax1.hist(gamma, 30, facecolor='g', alpha=0.75)
-    ax1.set_xlabel('Gamma')
-    ax1.set_ylabel('Frequency')
-    ax1.title.set_text('Relative gain in L1 norm')
-    ax1.grid(True)
-
-    n, bins, patches = ax2.hist(squarings_gain, 20, facecolor='g', alpha=0.75)
-    ax2.set_xlabel('Squarings gained')
-    ax2.set_ylabel('Frequency')
-    ax2.title.set_text('Squarings gain wrt Rodney balance')
-    ax2.grid(True)
-
-    if (groundTs is not None):
-        n, bins, patches = ax3.hist(groundTs, 30, facecolor='g', alpha=0.75)
-        ax3.set_xlabel('Ground Truth')
-        ax3.set_ylabel('Frequency')
-        ax3.title.set_text('Difference from original norm')
-        ax3.grid(True)
-
-        n, bins, patches = ax4.hist(squarings_gain_GT, 30, facecolor='g', alpha=0.75)
-        ax4.set_xlabel('Squarings gained')
-        ax4.set_ylabel('Frequency')
-        ax4.title.set_text('Squarings gain wrt Ground Truth')
-        ax4.grid(True)
-
-    # plt.show()
-    fig.savefig('scripts/plots/' + fig.canvas.get_window_title(), bbox_inches='tight')
+# ---------------------------------------------------------------------------------------------------------
 
 
 whatToDo = True
-forReal = True
+forReal = True  # Around 3 hours and an half
 
 # Section with tests on generated matrices
 if whatToDo:
@@ -126,3 +81,6 @@ if whatToDo:
 else:
     matrices = importMatrices('scripts/testMatrices')
     analyseTheseMatrices(matrices)
+
+
+print(datetime.now() - startTime)
