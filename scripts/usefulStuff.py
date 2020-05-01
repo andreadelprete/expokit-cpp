@@ -36,7 +36,7 @@ def test_matrix_GT(A, gt, balanceAlg):
     scipyNorm = norm(B_scipy, 1)
     newNorm = norm(B_new, 1)
 
-    return computeGains(scipyNorm, newNorm) + computeGains(gt, newNorm)
+    return computeGains(scipyNorm, newNorm) + computeGains(gt, newNorm) + (it, )
 
 
 def computeGains(norm1, norm2):
