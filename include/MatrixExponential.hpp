@@ -95,6 +95,8 @@ public:
     void balanceComputeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings);
     //void computeExpTimesVector(RefVector v, , int vec_squarings = -1);
 
+    int newBalancing(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter = 0);
+
 private:
     void init(int n);
 
@@ -450,6 +452,71 @@ void MatrixExponential<T, N>::matrix_exp_pade13(RefMatrix& A)
     tmp = b[12] * A6 + b[10] * A4 + b[8] * A2;
     V.noalias() = A6 * tmp;
     V += b[6] * A6 + b[4] * A4 + b[2] * A2 + b[0] * eye;
+}
+
+template <typename T, int N>
+int MatrixExponential<T, N>::newBalancing(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter)
+{
+    B = A; // Copy
+    D = MatrixType::Identity(size, size);
+    Dinv = MatrixType::Identity(size, size);
+
+    // TODO These should be made class fields
+    VectorType columnNorms = B.cwiseAbs().colwise().sum(); //.transpose();
+    MatrixType allColumnNorms = MatrixType::Zero(size, size);
+    int jMax = 0;
+    columnNorms.maxCoeff(&jMax);
+
+    T vMin = columnNorms(jMax) + 1; // Do not do worse than this
+    int iMin = 0;
+
+    if (maxIter == 0)
+        maxIter = 15 * size; // Simplyfied - to be checked
+
+    int it = 0;
+    for (; it < maxIter; ++it) {
+        columnNorms.maxCoeff(&jMax);
+
+        // TODO consider refactor block operations to static version
+        for (int k = 0; k < size; ++k) {
+            T possibleNorm;
+            if (k == jMax) {
+                allColumnNorms.col(k) = columnNorms + B.row(k).transpose();
+                allColumnNorms(k, k) = (columnNorms(k) + abs(B(k, k))) / 2;
+                possibleNorm = allColumnNorms.col(k).maxCoeff();
+            } else {
+                allColumnNorms.col(k) = columnNorms - (B.row(k).transpose() / 2);
+                allColumnNorms(k, k) = (columnNorms(k) * 2) - abs(B(k, k));
+                possibleNorm = allColumnNorms.col(k).maxCoeff();
+            }
+
+            if (possibleNorm < vMin) {
+                vMin = possibleNorm;
+                iMin = k;
+            }
+        }
+
+        // If last loop failed to find better solution
+        if (vMin >= columnNorms(jMax))
+            break; // Do not continue looking
+
+        if (iMin == jMax) {
+            D(iMin, iMin) /= 2;
+            Dinv(iMin, iMin) *= 2;
+            B.col(iMin) /= 2;
+            B.row(iMin) *= 2;
+        } else {
+            D(iMin, iMin) *= 2;
+            Dinv(iMin, iMin) /= 2;
+            B.col(iMin) *= 2;
+            B.row(iMin) /= 2;
+        }
+
+        // Save selected norms for new loop
+        columnNorms = allColumnNorms.col(iMin);
+    }
+
+    return it;
 }
 
 template <typename T, int N>

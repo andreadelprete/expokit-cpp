@@ -18,6 +18,7 @@ ADD_RUN(runExample "eigen3")
 ADD_RUN(runTSVExample "eigen3")
 ADD_RUN(runFindMinSquarings "eigen3")
 ADD_RUN(runFindVecSquarings "eigen3")
+ADD_RUN(runNewBalance "eigen3")
 
 
 ADD_RUN(runBalancing "eigen3")
