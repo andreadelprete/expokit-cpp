@@ -85,12 +85,18 @@ def new_balance(A, max_iter=None):
             if(k == jMax):
                 # the elements of row jMax are multiplied by rb
                 cNew[k, :] = c + (rb-1)*np.abs(B[k, :])
+                print("rB:", end=" ")
+                print(B[k, :])
+                print(cNew[k, :])
                 # all elements of col jMax are divided by rb (except for the one on the diagonal)
                 cNew[k, k] = (c[k] + (rb-1)*abs(A[k, k])) / rb
                 v[k] = np.max(cNew[k, :])
             else:
                 # the elements of row k are divided by rb
                 cNew[k, :] = c - (rb-1)*np.abs(B[k, :])/rb
+                print("rB:", end=" ")
+                print(B[k, :])
+                print(cNew[k, :])
                 # the elements of column k are multiplied by rb (except for the one on the diagonal)
                 cNew[k, k] = c[k]*rb - (rb-1)*abs(A[k, k])
                 v[k] = np.max(cNew[k, :])

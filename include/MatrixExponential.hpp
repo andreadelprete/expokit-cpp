@@ -462,7 +462,7 @@ int MatrixExponential<T, N>::newBalancing(RefMatrix& A, RefOutMatrix B, RefOutMa
     Dinv = MatrixType::Identity(size, size);
 
     // TODO These should be made class fields
-    VectorType columnNorms = B.cwiseAbs().colwise().sum(); //.transpose();
+    Matrix<T, 1, N> columnNorms = B.cwiseAbs().colwise().sum();
     MatrixType allColumnNorms = MatrixType::Zero(size, size);
     int jMax = 0;
     columnNorms.maxCoeff(&jMax);
@@ -481,13 +481,13 @@ int MatrixExponential<T, N>::newBalancing(RefMatrix& A, RefOutMatrix B, RefOutMa
         for (int k = 0; k < size; ++k) {
             T possibleNorm;
             if (k == jMax) {
-                allColumnNorms.col(k) = columnNorms + B.row(k).transpose();
+                allColumnNorms.row(k) = columnNorms + B.row(k).cwiseAbs();
                 allColumnNorms(k, k) = (columnNorms(k) + abs(B(k, k))) / 2;
-                possibleNorm = allColumnNorms.col(k).maxCoeff();
+                possibleNorm = allColumnNorms.row(k).maxCoeff();
             } else {
-                allColumnNorms.col(k) = columnNorms - (B.row(k).transpose() / 2);
+                allColumnNorms.row(k) = columnNorms - (B.row(k).cwiseAbs() / 2);
                 allColumnNorms(k, k) = (columnNorms(k) * 2) - abs(B(k, k));
-                possibleNorm = allColumnNorms.col(k).maxCoeff();
+                possibleNorm = allColumnNorms.row(k).maxCoeff();
             }
 
             if (possibleNorm < vMin) {
@@ -513,7 +513,7 @@ int MatrixExponential<T, N>::newBalancing(RefMatrix& A, RefOutMatrix B, RefOutMa
         }
 
         // Save selected norms for new loop
-        columnNorms = allColumnNorms.col(iMin);
+        columnNorms = allColumnNorms.row(iMin);
     }
 
     return it;
