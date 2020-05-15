@@ -76,10 +76,11 @@ public:
     int getMinSquarings() { return minSquarings; }
     void setMinSquarings(int minSquarings) { this->minSquarings = minSquarings; }
 
-    /** Compute the exponential of the given matrix arg and writes it in result.
+    /** 
+     * Compute the exponential of the given matrix arg and writes it in result.
      */
     void compute(RefMatrix& A, RefOutMatrix out);
-    void balanceCompute(RefMatrix& A, RefOutMatrix out);
+    // void balanceCompute(RefMatrix& A, RefOutMatrix out);
 
     /** Compute the product between the exponential of the given matrix arg and the given
      * vector v. The result is written it the output variable result.
@@ -92,16 +93,13 @@ public:
      * maximum speed, she/he should test different values of vec_squarings.
      */
     void computeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings = -1);
-    void balanceComputeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings);
+    // void balanceComputeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings);
     //void computeExpTimesVector(RefVector v, , int vec_squarings = -1);
 
-    int newBalancing(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter = 0);
 
 private:
     void init(int n);
 
-    void balancing1(RefMatrix& A);
-    void balancing2(RefMatrix& A);
 
     int determineSquarings(const double l1norm);
 
@@ -191,6 +189,8 @@ void MatrixExponential<T, N>::init(int n)
         metaProds[i].resize(n, n);
     }
     resetDelta();
+
+
 }
 
 template <typename T, int N>
@@ -247,10 +247,11 @@ void MatrixExponential<T, N>::compute(RefMatrix& A, RefOutMatrix out)
     prevA = A;
 }
 
+/*
 template <typename T, int N>
 void MatrixExponential<T, N>::balanceCompute(RefMatrix& A, RefOutMatrix out)
 {
-    balancing2(A);
+    balanceRodney(A);
     // std::cout << Abal << std::endl;
     computeUV(Abal);
     numer = U + V;
@@ -264,7 +265,7 @@ void MatrixExponential<T, N>::balanceCompute(RefMatrix& A, RefOutMatrix out)
 
     tmp.noalias() = D * metaProds[0];
     out.noalias() = tmp * Dinv;
-}
+}*/
 
 template <typename T, int N>
 void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings)
@@ -313,15 +314,16 @@ void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix& A, RefVector& v, 
     }
 }
 
+/*
 template <typename T, int N>
 void MatrixExponential<T, N>::balanceComputeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings)
 {
-    balancing2(A);
+    balanceRodney(A);
     vTmp1.noalias() = Dinv * v;
     // std::cout << v << std::endl;
     computeExpTimesVector(Abal, vTmp1, vTmp2, vec_squarings);
     out.noalias() = D * vTmp2;
-}
+}*/
 
 template <typename T, int N>
 int MatrixExponential<T, N>::determineSquarings(const double l1norm)
@@ -454,139 +456,6 @@ void MatrixExponential<T, N>::matrix_exp_pade13(RefMatrix& A)
     V += b[6] * A6 + b[4] * A4 + b[2] * A2 + b[0] * eye;
 }
 
-template <typename T, int N>
-int MatrixExponential<T, N>::newBalancing(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter)
-{
-    B = A; // Copy
-    D = MatrixType::Identity(size, size);
-    Dinv = MatrixType::Identity(size, size);
-
-    // TODO These should be made class fields
-    Matrix<T, 1, N> columnNorms = B.cwiseAbs().colwise().sum();
-    MatrixType allColumnNorms = MatrixType::Zero(size, size);
-    int jMax = 0;
-    columnNorms.maxCoeff(&jMax);
-
-    T vMin = columnNorms(jMax) + 1; // Do not do worse than this
-    int iMin = 0;
-
-    if (maxIter == 0)
-        maxIter = 15 * size; // Simplyfied - to be checked
-
-    int it = 0;
-    for (; it < maxIter; ++it) {
-        columnNorms.maxCoeff(&jMax);
-
-        // TODO consider refactor block operations to static version
-        for (int k = 0; k < size; ++k) {
-            T possibleNorm;
-            if (k == jMax) {
-                allColumnNorms.row(k) = columnNorms + B.row(k).cwiseAbs();
-                allColumnNorms(k, k) = (columnNorms(k) + abs(B(k, k))) / 2;
-                possibleNorm = allColumnNorms.row(k).maxCoeff();
-            } else {
-                allColumnNorms.row(k) = columnNorms - (B.row(k).cwiseAbs() / 2);
-                allColumnNorms(k, k) = (columnNorms(k) * 2) - abs(B(k, k));
-                possibleNorm = allColumnNorms.row(k).maxCoeff();
-            }
-
-            if (possibleNorm < vMin) {
-                vMin = possibleNorm;
-                iMin = k;
-            }
-        }
-
-        // If last loop failed to find better solution
-        if (vMin >= columnNorms(jMax))
-            break; // Do not continue looking
-
-        if (iMin == jMax) {
-            D(iMin, iMin) /= 2;
-            Dinv(iMin, iMin) *= 2;
-            B.col(iMin) /= 2;
-            B.row(iMin) *= 2;
-        } else {
-            D(iMin, iMin) *= 2;
-            Dinv(iMin, iMin) /= 2;
-            B.col(iMin) *= 2;
-            B.row(iMin) /= 2;
-        }
-
-        // Save selected norms for new loop
-        columnNorms = allColumnNorms.row(iMin);
-    }
-
-    return it;
-}
-
-template <typename T, int N>
-void MatrixExponential<T, N>::balancing1(RefMatrix& A)
-{
-    D = MatrixType::Identity(size, size);
-    Dinv = MatrixType::Identity(size, size);
-
-    Abal = A; // Copy necessary
-
-    T c, r, f;
-
-    for (int k = 0; k < 100; ++k) {
-        for (int i = 0; i < size; ++i) {
-            // I'm sorry it should be the norm excluding the diagonal elements
-            c = Abal.col(i).norm();
-            r = Abal.row(i).norm();
-            f = sqrt(r / c);
-
-            D(i, i) = f * D(i, i);
-            Dinv(i, i) = Dinv(i, i) / f;
-
-            Abal.col(i) = f * Abal.col(i);
-            Abal.row(i) = Abal.row(i) / f;
-        }
-    }
-}
-
-template <typename T, int N>
-void MatrixExponential<T, N>::balancing2(RefMatrix& A)
-{
-    D = MatrixType::Identity(size, size);
-    Dinv = MatrixType::Identity(size, size);
-
-    Abal = A;
-
-    T c, r, s, f;
-    bool converged = false;
-
-    while (!converged) {
-        converged = true;
-
-        for (int i = 0; i < size; ++i) {
-            c = Abal.col(i).template lpNorm<1>();
-            r = Abal.row(i).template lpNorm<1>();
-            s = c * c + r * r;
-            f = 1;
-
-            while (c < r / 2 && c != 0) {
-                c = c * 2;
-                r = r / 2;
-                f = f * 2;
-            }
-
-            while (c >= r * 2 && r != 0) {
-                c = c / 2;
-                r = r * 2;
-                f = f / 2;
-            }
-
-            if (c * c + r * r < 0.95 * s) {
-                converged = false;
-                D(i, i) = f * D(i, i);
-                Dinv(i, i) = Dinv(i, i) / f;
-                Abal.col(i) = f * Abal.col(i);
-                Abal.row(i) = Abal.row(i) / f;
-            }
-        }
-    }
-}
 
 } // end namespace Eigen
 

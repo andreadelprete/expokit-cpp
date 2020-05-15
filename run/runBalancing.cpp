@@ -52,18 +52,18 @@ int main()
         // cout << ref << endl;
         stats.store("ComputeIntegralXt", d0t0v0.getSquarings());
 
-        START_PROFILER("BalancedComputeIntegralXt");
-        d0t0v0.BalancedComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
-        STOP_PROFILER("BalancedComputeIntegralXt");
+        // START_PROFILER("BalancedComputeIntegralXt");
+        // d0t0v0.BalancedComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
+        // STOP_PROFILER("BalancedComputeIntegralXt");
         // cout << out << endl;
         stats.store("BalancedComputeIntegralXt", d0t0v0.getSquarings());
         e = computeErrorIntegral24(out, ref, TIMESTEP * i);
         stats.store("ERROR2___BalancedComputeIntegralXt", e(0));
         stats.store("ERRORINF_BalancedComputeIntegralXt", e(1));
 
-        START_PROFILER("BalancedComputeIntegralXtTV");
-        dxt0v1.BalancedComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
-        STOP_PROFILER("BalancedComputeIntegralXtTV");
+        // START_PROFILER("BalancedComputeIntegralXtTV");
+        // dxt0v1.BalancedComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
+        // STOP_PROFILER("BalancedComputeIntegralXtTV");
         // cout << out << endl;
         stats.store("BalancedComputeIntegralXtTV", dxt0v1.getSquarings());
         e = computeErrorIntegral24(out, ref, TIMESTEP * i);

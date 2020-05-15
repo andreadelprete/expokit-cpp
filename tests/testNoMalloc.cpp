@@ -1,6 +1,8 @@
 #include "LDS2OrderUtility.hpp"
 #include "LDSUtility.hpp"
 #include "MatrixExponential.hpp"
+#include "BalancingMethods.hpp"
+
 #include <Eigen/Core>
 #include <iostream>
 
@@ -30,6 +32,10 @@ int main()
     Matrix<double, N, 1> b;
     b << 4, 3, 2, 1;
 
+    MatrixXd B(N, N);
+    MatrixXd D(N, N);
+    MatrixXd Dinv(N, N);
+
     MatrixExponential<double, Dynamic> expUtil(N);
     LDSUtility<double, Dynamic> lds(N);
     LDS2OrderUtility<double, Dynamic> lds2(N);
@@ -37,10 +43,16 @@ int main()
     // MatrixExponential
     Matrix<double, N, 1> res1;
     Matrix<double, N, N> res2;
+    BalancingMethods<double, Dynamic> balUtil(N);
+
 
     EIGEN_MALLOC_NOT_ALLOWED
     expUtil.computeExpTimesVector(A, xInit, res1);
     expUtil.compute(A, res2);
+
+    // Balance methods
+    balUtil.balanceNew(A, B, D, Dinv);
+    balUtil.balanceRodney(A, B, D, Dinv);
 
     // LDSUtility
     lds.ComputeXt(A, b, xInit, 1, res1);
@@ -52,5 +64,5 @@ int main()
     lds2.ComputeIntegralXt(A, b, xInit, 1, res1);
     lds2.ComputeDoubleIntegralXt(A, b, xInit, 1, res1);
 
-    // TODO delta active 
+    // TODO delta active
 }
