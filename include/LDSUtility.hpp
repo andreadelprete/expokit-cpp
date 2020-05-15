@@ -83,7 +83,7 @@ public:
      * Compute the value of the integral of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
     void ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out);
-    void BalancedComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out);
+    // void BalancedComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out);
 
     /**
      * Compute the value of the double integral of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
@@ -183,7 +183,7 @@ void LDSUtility<T, N>::ComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& 
     out = res2.template block<N, 1>(0, 0);
     squaringsUsed = expUtil2.getSquarings();
 }
-
+/*
 template <typename T, int N>
 void LDSUtility<T, N>::BalancedComputeIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)
 {
@@ -210,7 +210,7 @@ void LDSUtility<T, N>::BalancedComputeIntegralXt(RefMatrix& A, RefVector& b, Ref
 
     out = res2.template block<N, 1>(0, 0);
     squaringsUsed = expUtil2.getSquarings();
-}
+}*/
 
 template <typename T, int N>
 void LDSUtility<T, N>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out)

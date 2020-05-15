@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "MatrixExponential.hpp"
+#include "BalancingMethods.hpp"
 
 #include "utils/errorComputing.hpp"
 #include "utils/readTSV.hpp"
@@ -14,11 +14,19 @@ using namespace std;
 using namespace expokit;
 using namespace Eigen;
 
+#ifdef EIGEN_RUNTIME_NO_MALLOC
+#define EIGEN_MALLOC_ALLOWED Eigen::internal::set_is_malloc_allowed(true);
+#define EIGEN_MALLOC_NOT_ALLOWED Eigen::internal::set_is_malloc_allowed(false);
+#else
+#define EIGEN_MALLOC_ALLOWED
+#define EIGEN_MALLOC_NOT_ALLOWED
+#endif
+
 #define N 4
 
 int main()
 {
-    cout << "Running speed ups benchmark" << endl;
+    cout << "Running new balance" << endl;
 
     IOFormat CleanFmt(FullPrecision, 0, ", ", "\n", "[", "]");
 
@@ -36,9 +44,11 @@ int main()
     MatrixXd D(N, N);
     MatrixXd Dinv(N, N);
 
-    MatrixExponential<double, Dynamic> util(N);
+    BalancingMethods<double, Dynamic> util(N);
 
-    int it = util.newBalancing(A, B, D, Dinv);
+    EIGEN_MALLOC_NOT_ALLOWED
+    int it = util.balanceNew(A, B, D, Dinv);
+    EIGEN_MALLOC_ALLOWED
 
     std::cout << "A:" << std::endl
               << A << std::endl

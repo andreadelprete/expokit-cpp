@@ -83,7 +83,7 @@ ENDFOREACH(header ${HEADERS})
 ADD_SUBDIRECTORY(src)
 
 # --- TESTS -------------------------------------------------------------
-#ADD_SUBDIRECTORY(tests)
+ADD_SUBDIRECTORY(tests)
 
 
 # --- PACKAGING ----------------------------------------------------------------
