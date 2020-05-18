@@ -100,7 +100,6 @@ public:
 private:
     void init(int n);
 
-
     int determineSquarings(const double l1norm);
 
     void computeUV(RefMatrix& A);
@@ -189,8 +188,6 @@ void MatrixExponential<T, N>::init(int n)
         metaProds[i].resize(n, n);
     }
     resetDelta();
-
-
 }
 
 template <typename T, int N>
@@ -455,7 +452,6 @@ void MatrixExponential<T, N>::matrix_exp_pade13(RefMatrix& A)
     V.noalias() = A6 * tmp;
     V += b[6] * A6 + b[4] * A4 + b[2] * A2 + b[0] * eye;
 }
-
 
 } // end namespace Eigen
 
