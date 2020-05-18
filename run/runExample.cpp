@@ -13,7 +13,7 @@ using namespace expokit;
 
 int main()
 {
-    cout << "Start test DYN Matrix Exponential\n";
+    cout << "Start example usage" << endl;
     MatrixXd mRes(5, 5);
     VectorXd vRes(5);
 

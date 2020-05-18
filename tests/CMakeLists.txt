@@ -25,10 +25,13 @@ ENDMACRO(ADD_TESTCASE)
 #ADD_TESTCASE(test_dense_small "f2c")
 #ADD_TESTCASE(test_dense_large "f2c")
 #ADD_TESTCASE(test_small       "eigen3")
+
+#[[
 ADD_TESTCASE(testNoMalloc "eigen3")
 ADD_TESTCASE(testLDS "eigen3")
 ADD_TESTCASE(testMatrixExp "eigen3")
 ADD_TESTCASE(testBalancing "eigen3")
+]]
 
 
 
