@@ -64,10 +64,8 @@ private:
 public:
     LDSUtility();
 
-    void useDelta(bool yesOrNo);
-    bool isDeltaUsed();
-    void setMinSquarings(int minSquarings);
-    int getMinSquarings();
+    void setMaxMultiplications(int mm);
+    int getMaxMultiplications();
     void useTV(bool yesOrNo) { timesVector = yesOrNo; }
     bool isTVUsed() { return timesVector; }
     void setTVSquarings(int TVSquarings) { this->TVSquarings = TVSquarings; }
@@ -104,34 +102,20 @@ LDSUtility<T, N>::LDSUtility()
     TVSquarings = -1;
 }
 
-// Properties about Delta
-template <typename T, int N>
-void LDSUtility<T, N>::useDelta(bool yesOrNo)
-{
-    expUtil1.useDelta(yesOrNo);
-    expUtil2.useDelta(yesOrNo);
-    expUtil3.useDelta(yesOrNo);
-}
-
-template <typename T, int N>
-bool LDSUtility<T, N>::isDeltaUsed()
-{
-    return expUtil1.isDeltaUsed();
-}
 
 // Properties about Time Scaling
 template <typename T, int N>
-void LDSUtility<T, N>::setMinSquarings(int minSquarings)
+void LDSUtility<T, N>::setMaxMultiplications(int mm)
 {
-    expUtil1.setMinSquarings(minSquarings);
-    expUtil2.setMinSquarings(minSquarings);
-    expUtil3.setMinSquarings(minSquarings);
+    expUtil1.setMaxMultiplications(mm);
+    expUtil2.setMaxMultiplications(mm);
+    expUtil3.setMaxMultiplications(mm);
 }
 
 template <typename T, int N>
-int LDSUtility<T, N>::getMinSquarings()
+int LDSUtility<T, N>::getMaxMultiplications()
 {
-    return expUtil1.getMinSquarings();
+    return expUtil1.getMaxMultiplications();
 }
 
 template <typename T, int N>

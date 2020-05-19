@@ -55,10 +55,6 @@ private:
 public:
     LDS2OrderUtility();
 
-    void useDelta(bool yesOrNo);
-    bool isDeltaUsed();
-    void setMinSquarings(int minSquarings);
-    int getMinSquarings();
     void useTV(bool yesOrNo) { firstOrder.useTV(yesOrNo); }
     bool isTVUsed() { return firstOrder.isTVUsed(); }
     void setTVSquarings(int TVSquarings) { firstOrder.setTVSquarings(TVSquarings); }
@@ -95,31 +91,6 @@ LDS2OrderUtility<T, N>::LDS2OrderUtility()
     As.template block<NHalf, NHalf>(0, NHalf) = SubStaMatrix::Identity();
 }
 
-// Properties about Delta
-template <typename T, int N>
-void LDS2OrderUtility<T, N>::useDelta(bool yesOrNo)
-{
-    firstOrder.useDelta(yesOrNo);
-}
-
-template <typename T, int N>
-bool LDS2OrderUtility<T, N>::isDeltaUsed()
-{
-    return firstOrder.isDeltaUsed();
-}
-
-// Properties about Time Scaling
-template <typename T, int N>
-void LDS2OrderUtility<T, N>::setMinSquarings(int minSquarings)
-{
-    firstOrder.setMinSquarings(minSquarings);
-}
-
-template <typename T, int N>
-int LDS2OrderUtility<T, N>::getMinSquarings()
-{
-    return firstOrder.getMinSquarings();
-}
 
 // Just to avoid repetition
 template <typename T, int N>
