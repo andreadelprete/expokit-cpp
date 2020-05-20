@@ -211,7 +211,9 @@ void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix& A, RefVector& v, 
     ppLU.compute(denom);
     tmp = ppLU.solve(numer);
 
-    vec_squarings = int(floor(0.693 * log(size) + 0.529));
+    if (vec_squarings < 0)
+        vec_squarings = int(floor(1.4427 * log(size) + 0.529));
+
 
     // number of squarings implemented via matrix-matrix multiplications
     int mat_squarings = squarings - vec_squarings;

@@ -1,7 +1,6 @@
 #include <Eigen/Core>
 #include <iostream>
 
-#include "LDS2OrderUtility.hpp"
 #include "LDSUtility.hpp"
 #include "MatrixExponential.hpp"
 
@@ -45,8 +44,6 @@ int main()
     LDSUtility<double, 4> ldsStatic;
     LDSUtility<double, Dynamic> ldsDynamic(4);
 
-    LDS2OrderUtility<double, 4> lds2Static;
-    LDS2OrderUtility<double, Dynamic> lds2Dynamic(4);
     Vector4d b, xInit;
     b << 1, 2, 3, 4;
     b *= 0.1;
@@ -62,11 +59,6 @@ int main()
     ldsDynamic.ComputeXt(A, b, xInit, 1, res);
     flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeXt");
 
-    lds2Static.ComputeXt(A, b, xInit, 1, res);
-    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Sta ComputeXt TS");
-
-    lds2Dynamic.ComputeXt(A.block(2, 0, 2, 2), A.block(2, 2, 2, 2), b, xInit, 1, res);
-    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeXt TS");
 
     // ComputeIntegralXt
     ref = ComputeIntegralXt(A, b, xInit, 3, INT_STEP);
@@ -76,11 +68,6 @@ int main()
     ldsDynamic.ComputeIntegralXt(A, b, xInit, 3, res);
     flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeIntegralXt");
 
-    lds2Static.ComputeIntegralXt(A, b, xInit, 3, res);
-    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Sta ComputeIntegralXt TS");
-
-    lds2Dynamic.ComputeIntegralXt(A.block(2, 0, 2, 2), A.block(2, 2, 2, 2), b, xInit, 3, res);
-    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeIntegralXt TS");
 
     // ComputeDoubleIntegralXt
     ref = ComputeDoubleIntegralXt(A, b, xInit, 2, INT_STEP);
@@ -91,11 +78,6 @@ int main()
     ldsDynamic.ComputeDoubleIntegralXt(A, b, xInit, 2, res);
     flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeDoubleIntegralXt");
 
-    lds2Static.ComputeDoubleIntegralXt(A, b, xInit, 2, res);
-    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Sta ComputeDoubleIntegralXt TS");
-
-    lds2Dynamic.ComputeDoubleIntegralXt(A.block(2, 0, 2, 2), A.block(2, 2, 2, 2), b, xInit, 2, res);
-    flag &= basicAssertion(ref.isApprox(res, PRECISION_INT), "Dyn ComputeDoubleIntegralXt TS");
     // cout << ref - res << endl;
 
     return !flag;

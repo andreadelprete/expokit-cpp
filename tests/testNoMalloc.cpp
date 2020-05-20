@@ -1,4 +1,3 @@
-#include "LDS2OrderUtility.hpp"
 #include "LDSUtility.hpp"
 #include "MatrixExponential.hpp"
 #include "BalancingMethods.hpp"
@@ -38,7 +37,6 @@ int main()
 
     MatrixExponential<double, Dynamic> expUtil(N);
     LDSUtility<double, Dynamic> lds(N);
-    LDS2OrderUtility<double, Dynamic> lds2(N);
 
     // MatrixExponential
     Matrix<double, N, 1> res1;
@@ -58,11 +56,4 @@ int main()
     lds.ComputeXt(A, b, xInit, 1, res1);
     lds.ComputeIntegralXt(A, b, xInit, 1, res1);
     lds.ComputeDoubleIntegralXt(A, b, xInit, 1, res1);
-
-    // LDS2
-    lds2.ComputeXt(A, b, xInit, 1, res1);
-    lds2.ComputeIntegralXt(A, b, xInit, 1, res1);
-    lds2.ComputeDoubleIntegralXt(A, b, xInit, 1, res1);
-
-    // TODO delta active
 }

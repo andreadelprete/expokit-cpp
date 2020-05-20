@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "LDS2OrderUtility.hpp"
+#include "LDSUtility.hpp"
 
 #include "utils/readTSV.hpp"
 #include "utils/statistics.hpp"
@@ -21,7 +21,7 @@ using namespace Eigen;
 
 int main()
 {
-    cout << "Running speed ups benchmark" << endl;
+    cout << "Running finder of best vec_squarings" << endl;
 
     Statistics stats;
 
@@ -37,30 +37,19 @@ int main()
     LDSUtility<double, M> dxt0v1;
     dxt0v1.useTV(true);
 
-    // DeltaX_TSON_TVON
-    LDS2OrderUtility<double, M> dxt1v1;
-    dxt1v1.useTV(true);
-
     // Finding optimal value of vec_squarings for Times Vector (TV)
-    for (int k = -1; k < 15; k++)
+    // The old method was mapped at k == -2, the new one at k == -1
+    for (int k = -2; k < 8; k++)
     {
         string nopad = to_string(k);
         std::string padded = std::string(2 - nopad.length(), '0') + nopad;
-        string namet0 = "T0VECHO" + padded;
-        string namet1 = "T1VECHO" + padded;
+        string namet0 = "VS=" + padded;
 
         dxt0v1.setTVSquarings(k);
         for (unsigned int i = 0; i < vecA.size(); ++i) {
             START_PROFILER(namet0);
             dxt0v1.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
             STOP_PROFILER(namet0);
-        }
-
-        dxt1v1.setTVSquarings(k);
-        for (unsigned int i = 0; i < vecA.size(); ++i) {
-            START_PROFILER(namet1);
-            dxt1v1.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
-            STOP_PROFILER(namet1);
         }
     }
     // The magic number seems to be 5 for dxt0v1

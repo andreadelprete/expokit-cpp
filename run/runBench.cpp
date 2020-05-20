@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "LDS2OrderUtility.hpp"
+#include "LDSUtility.hpp"
 
 #include "utils/readTSV.hpp"
 #include "utils/statistics.hpp"
@@ -41,13 +41,6 @@ int main()
     dxt0v1.useTV(true);
     dxt0v1.setTVSquarings(5);
 
-    // DeltaOFF_TSON_TVOFF
-    LDS2OrderUtility<double, M> d0t1v0;
-
-    // DeltaX_TSON_TVON
-    LDS2OrderUtility<double, M> dxt1v1;
-    dxt1v1.useTV(true);
-    dxt1v1.setTVSquarings(5);
 
     for (unsigned int i = 0; i < vecA.size(); ++i) {
         START_PROFILER("DeltaOFF_TSOFF_TVOFF");
@@ -62,22 +55,6 @@ int main()
         e = computeErrorIntegral24(out, ref, TIMESTEP * i);
         stats.store("ERROR2___DeltaX___TSOFF_TVON", e(0));
         stats.store("ERRORINF_DeltaX___TSOFF_TVON", e(1));
-
-        START_PROFILER("DeltaOFF_TSON__TVOFF");
-        d0t1v0.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
-        STOP_PROFILER("DeltaOFF_TSON__TVOFF");
-        stats.store("SQUARINGS_DeltaOFF_TSON__TVOFF", d0t1v0.getSquarings());
-        e = computeErrorIntegral24(out, ref, TIMESTEP * i);
-        stats.store("ERROR2___DeltaOFF_TSON__TVOFF", e(0));
-        stats.store("ERRORINF_DeltaOFF_TSON__TVOFF", e(1));
-
-        START_PROFILER("DeltaX___TSON__TVON");
-        dxt1v1.ComputeIntegralXt(vecA[i], vecb[i], vecxInit[i], TIMESTEP, out);
-        STOP_PROFILER("DeltaX___TSON__TVON");
-        stats.store("SQUARINGS_DeltaX___TSON__TVON", dxt1v1.getSquarings());
-        e = computeErrorIntegral24(out, ref, TIMESTEP * i);
-        stats.store("ERROR2___DeltaX___TSON__TVON", e(0));
-        stats.store("ERRORINF_DeltaX___TSON__TVON", e(1));
     }
 
     // Print out results

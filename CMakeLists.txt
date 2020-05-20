@@ -62,7 +62,6 @@ SET(HEADERS
     include/expokit.h
     include/MatrixExponential.hpp
     include/LDSUtility.hpp
-    include/LDS2OrderUtility.hpp
     include/utils/stop-watch.h
     include/utils/Stdafx.h
 )
