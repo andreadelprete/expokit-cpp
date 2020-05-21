@@ -8,10 +8,10 @@ using namespace std;
 using namespace expokit;
 
 #define N 10
-#define MM 30
+#define MM 20
 
 int main (int argc, const char* argv[]) {
-    int scale = 3;
+    int scale = 30;
     if (argc > 1) {
         scale = std::atoi(argv[1]);
     }
@@ -24,7 +24,7 @@ int main (int argc, const char* argv[]) {
     MatrixXd Atran = A.transpose();
     cout << "Atran:" << endl
          << Atran << endl;
-    MatrixXd APos = A * Atran;
+    MatrixXd APos = -A * Atran;
     cout << "APos: " << endl
          << APos << endl;
     cout << "eig: " << endl
