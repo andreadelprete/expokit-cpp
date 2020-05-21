@@ -103,7 +103,7 @@ LDSUtility<T, N>::LDSUtility()
 }
 
 
-// Properties about Time Scaling
+// Properties about Max Multiplications
 template <typename T, int N>
 void LDSUtility<T, N>::setMaxMultiplications(int mm)
 {
@@ -264,10 +264,8 @@ public:
     } // Creating with dim 2
     LDSUtility(int n);
 
-    void useDelta(bool yesOrNo);
-    bool isDeltaUsed();
-    void setMinSquarings(int minSquarings);
-    int getMinSquarings();
+    void setMaxMultiplications(int mm);
+    int getMaxMultiplications();
     void useTV(bool yesOrNo) { timesVector = yesOrNo; }
     bool isTVUsed() { return timesVector; }
     void setTVSquarings(int TVSquarings) { this->TVSquarings = TVSquarings; }
@@ -298,34 +296,19 @@ LDSUtility<T, Dynamic>::LDSUtility(int n)
     resize(n);
 }
 
-// Properties about Delta
+// Properties about Max Multiplications
 template <typename T>
-void LDSUtility<T, Dynamic>::useDelta(bool yesOrNo)
+void LDSUtility<T, Dynamic>::setMaxMultiplications(int mm)
 {
-    expUtil1.useDelta(yesOrNo);
-    expUtil2.useDelta(yesOrNo);
-    expUtil3.useDelta(yesOrNo);
+    expUtil1.setMaxMultiplications(mm);
+    expUtil2.setMaxMultiplications(mm);
+    expUtil3.setMaxMultiplications(mm);
 }
 
 template <typename T>
-bool LDSUtility<T, Dynamic>::isDeltaUsed()
+int LDSUtility<T, Dynamic>::getMaxMultiplications()
 {
-    return expUtil1.isDeltaUsed();
-}
-
-// Properties about Time Scaling
-template <typename T>
-void LDSUtility<T, Dynamic>::setMinSquarings(int minSquarings)
-{
-    expUtil1.setMinSquarings(minSquarings);
-    expUtil2.setMinSquarings(minSquarings);
-    expUtil3.setMinSquarings(minSquarings);
-}
-
-template <typename T>
-int LDSUtility<T, Dynamic>::getMinSquarings()
-{
-    return expUtil1.getMinSquarings();
+    return expUtil1.getMaxMultiplications();
 }
 
 template <typename T>

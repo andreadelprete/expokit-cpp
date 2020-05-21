@@ -15,6 +15,8 @@ int main (int argc, const char* argv[]) {
         scale = std::atoi(argv[1]);
     }
 
+    cout << "Running degradation on max multiplications" << endl;
+
     MatrixXd A = MatrixXd::Random(N, N) * scale;
 
     MatrixXd Aref = A.exp();
