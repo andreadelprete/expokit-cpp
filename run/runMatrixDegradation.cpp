@@ -1,4 +1,5 @@
 #include <Eigen/Core>
+#include <Eigen/Eigenvalues> 
 
 
 #include "MatrixExponential.hpp"
@@ -18,8 +19,20 @@ int main (int argc, const char* argv[]) {
     cout << "Running degradation on max multiplications" << endl;
 
     MatrixXd A = MatrixXd::Random(N, N) * scale;
+    cout << "A:" << endl
+         << A << endl;
+    MatrixXd Atran = A.transpose();
+    cout << "Atran:" << endl
+         << Atran << endl;
+    MatrixXd APos = A * Atran;
+    cout << "APos: " << endl
+         << APos << endl;
+    cout << "eig: " << endl
+         << APos.eigenvalues() << endl;
 
-    MatrixXd Aref = A.exp();
+    MatrixXd Aref = APos.exp();
+    cout << "Aref: " << endl
+         << Aref << endl;
     cout<< "Correct result norm: " << Aref.norm() << endl;
 
     MatrixExponential<double, Dynamic> expUtil(N);
@@ -29,7 +42,7 @@ int main (int argc, const char* argv[]) {
     for (int i = -1; i < MM; ++i)
     {
         expUtil.setMaxMultiplications(i);
-        expUtil.compute(A, res);
+        expUtil.compute(APos, res);
         
         double errNorm = (Aref - res).norm();
         cout << "Max Multiplications: " << i <<" error: " << errNorm << endl;
