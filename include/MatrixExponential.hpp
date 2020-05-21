@@ -67,7 +67,7 @@ public:
 
     int getMaxMultiplications() const { return maxMultiplications; }
     // TODO some input check would be nice
-    void setMaxMultiplications(int ms) const { maxMultiplications = ms; }
+    void setMaxMultiplications(int ms) { maxMultiplications = ms; }
 
     /** 
      * Compute the exponential of the given matrix arg and writes it in result.

@@ -19,13 +19,16 @@ ADD_RUN(runTSVExample "eigen3")
 ADD_RUN(runFindVecSquarings "eigen3")
 ADD_RUN(runBalancing "eigen3")
 ADD_RUN(runNewBalance "eigen3")
+ADD_RUN(runIntegralExp "eigen3")
+ADD_RUN(runMatrixDegradation "eigen3")
+
 
 #[[
 
 ]]
 
 
-ADD_RUN(runIntegralExp "eigen3")
+
 
 
 
