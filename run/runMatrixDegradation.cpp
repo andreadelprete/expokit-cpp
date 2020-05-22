@@ -11,7 +11,7 @@ using namespace expokit;
 #define MM 20
 
 int main (int argc, const char* argv[]) {
-    int scale = 30;
+    int scale = 10;
     if (argc > 1) {
         scale = std::atoi(argv[1]);
     }
@@ -19,20 +19,20 @@ int main (int argc, const char* argv[]) {
     cout << "Running degradation on max multiplications" << endl;
 
     MatrixXd A = MatrixXd::Random(N, N) * scale;
-    cout << "A:" << endl
-         << A << endl;
+//     cout << "A:" << endl
+//          << A << endl;
     MatrixXd Atran = A.transpose();
-    cout << "Atran:" << endl
-         << Atran << endl;
+//     cout << "Atran:" << endl
+//          << Atran << endl;
     MatrixXd APos = -A * Atran;
-    cout << "APos: " << endl
-         << APos << endl;
-    cout << "eig: " << endl
-         << APos.eigenvalues() << endl;
+//     cout << "APos: " << endl
+//          << APos << endl;
+//     cout << "eig: " << endl
+//          << APos.eigenvalues() << endl;
 
     MatrixXd Aref = APos.exp();
-    cout << "Aref: " << endl
-         << Aref << endl;
+//     cout << "Aref: " << endl
+//          << Aref << endl;
     cout<< "Correct result norm: " << Aref.norm() << endl;
 
     MatrixExponential<double, Dynamic> expUtil(N);
@@ -46,6 +46,7 @@ int main (int argc, const char* argv[]) {
         
         double errNorm = (Aref - res).norm();
         cout << "Max Multiplications: " << i <<" error: " << errNorm << endl;
+     //    cout << res << endl;
     }
     
     return 0;

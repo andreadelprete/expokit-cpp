@@ -89,6 +89,8 @@ public:
 private:
     void init(int n);
 
+    int determineMul(const double l1norm);
+
     int determineSquarings(const double l1norm);
 
     void computeUV(RefMatrix& A);
@@ -194,6 +196,9 @@ void MatrixExponential<T, N>::compute(RefMatrix& A, RefOutMatrix out)
     ppLU.compute(denom);
     metaProds[squarings] = ppLU.solve(numer);
 
+    // std::cout << "metaProds[squarings]" << std::endl
+    //           << metaProds[squarings] << std::endl;
+
     // undo scaling by repeated squaring
     for (int i = squarings; i > 0; --i) {
         metaProds[i - 1].noalias() = metaProds[i] * metaProds[i];
@@ -213,7 +218,7 @@ void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix& A, RefVector& v, 
 
     if (vec_squarings < 0) {
         vec_squarings = int(floor(1.4427 * log(size) + 0.529));
-    } 
+    }
 
     // number of squarings implemented via matrix-matrix multiplications
     int mat_squarings = squarings - vec_squarings;
@@ -238,6 +243,22 @@ void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix& A, RefVector& v, 
 }
 
 template <typename T, int N>
+int MatrixExponential<T, N>::determineMul(const double l1norm)
+{
+    if (l1norm > 2.097847961257068e+000) {
+        return determineSquarings(l1norm) + 6;
+    } else if (l1norm < 1.495585217958292e-002) {
+        return 2;
+    } else if (l1norm < 2.539398330063230e-001) {
+        return 3;
+    } else if (l1norm < 9.504178996162932e-001) {
+        return 4;
+    } else {
+        return 5;
+    }
+}
+
+template <typename T, int N>
 int MatrixExponential<T, N>::determineSquarings(const double l1norm)
 {
     const double maxnorm = 5.371920351148152;
@@ -253,9 +274,15 @@ template <typename T, int N>
 void MatrixExponential<T, N>::computeUV(RefMatrix& A)
 {
     squarings = 0;
+    const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
 
     if (maxMultiplications >= 0) {
-        switch (maxMultiplications) {
+        int nMul = determineMul(l1norm);
+        
+        if (nMul > maxMultiplications)
+            nMul = maxMultiplications;
+
+        switch (nMul) {
         case 6:
             matrix_exp_pade13(A);
             break;
@@ -279,17 +306,16 @@ void MatrixExponential<T, N>::computeUV(RefMatrix& A)
             break;
 
         default: {
-            const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
-            squarings = determineSquarings(l1norm);
-            if (squarings + 6 > maxMultiplications)
-                squarings = maxMultiplications - 6;
+            squarings = nMul - 6;
+ 
+             A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
+            // std::cout << "Ascaled: " << std::endl
+            //           << A_scaled << std::endl;
 
-            A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
             matrix_exp_pade13(A_scaled);
         }
         }
     } else { // Classic algorithm
-        const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
         if (l1norm > 2.097847961257068e+000) {
             squarings = determineSquarings(l1norm);
             A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
@@ -318,8 +344,8 @@ void MatrixExponential<T, N>::matrix_exp_pade2(RefMatrix& A)
 {
     const T b[] = { 12., 6. };
     A2.noalias() = A * A;
-    V = b[0] * eye + A2;
-    U = b[1] * A;
+    V.noalias() = b[0] * eye + A2;
+    U.noalias() = b[1] * A;
 }
 
 template <typename T, int N>
