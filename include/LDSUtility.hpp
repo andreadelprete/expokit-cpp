@@ -102,7 +102,6 @@ LDSUtility<T, N>::LDSUtility()
     TVSquarings = -1;
 }
 
-
 // Properties about Max Multiplications
 template <typename T, int N>
 void LDSUtility<T, N>::setMaxMultiplications(int mm)
@@ -288,6 +287,8 @@ public:
      * Compute the value of the double integral of x(T) given x(0)=xInit and the linear dynamics dx = Ax+b
      */
     void ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector out);
+
+    void ComputeIntegrals(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector outInt, RefOutVector outDoubleInt);
 };
 
 template <typename T>
@@ -413,6 +414,28 @@ void LDSUtility<T, Dynamic>::ComputeDoubleIntegralXt(RefMatrix& A, RefVector& b,
     out = res3.block(0, 0, n, 1);
     squaringsUsed = expUtil3.getSquarings();
 }
+
+template <typename T>
+void LDSUtility<T, Dynamic>::ComputeIntegrals(RefMatrix& A, RefVector& b, RefVector& xInit, T step, RefOutVector outInt, RefOutVector outDoubleInt)
+{
+    // Building aumented matrix A2
+    A2.block(0, 0, n, n) = A;
+    A2.block(0, n, n, 1) = b;
+    A2.block(0, n + 1, n, 1) = xInit;
+    //A2.block(n, n + 1, 2, 2) = Matrix<T, 2, 2>::Identity();
+    A2(n, n + 1) = 1;
+    A2(n + 1, n + 2) = 1;
+    A2 *= step;
+
+    // Matrix exponential and extracting the interesting result
+    expUtil3.compute(A2, res3all);
+    // cout << res3all << endl;
+    // res3.noalias() = res3all * z2;
+
+    outInt = res3all.block(0, n + 1, n, 1);
+    outDoubleInt = res3all.block(0, n + 2, n, 1);
+}
+
 }
 
 #endif

@@ -30,6 +30,8 @@ ADD_TESTCASE(testNoMalloc "eigen3")
 ADD_TESTCASE(testLDS "eigen3")
 ADD_TESTCASE(testMatrixExp "eigen3")
 ADD_TESTCASE(testBalancing "eigen3")
+ADD_TESTCASE(testBothIntegrals "eigen3")
+
 
 
 #[[
