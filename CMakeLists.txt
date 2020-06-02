@@ -61,6 +61,7 @@ SET(HEADERS
     include/dgpadm.h
     include/expokit.h
     include/MatrixExponential.hpp
+    include/MatExpIntegral.hpp
     include/LDSUtility.hpp
     include/utils/stop-watch.h
     include/utils/Stdafx.h
