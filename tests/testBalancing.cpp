@@ -34,5 +34,7 @@ int main()
     if ((A - D * B * Dinv).eval().norm() != 0)
         return -1;
 
+    // TODO test for actual NB correctness, get results from python
+
     return 0;
 }
