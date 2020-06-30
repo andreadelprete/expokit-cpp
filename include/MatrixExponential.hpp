@@ -19,6 +19,7 @@
 #include <Eigen/LU>
 #include <iostream>
 #include <stdio.h>
+#include "BalancingMethods.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,26 +43,37 @@ private:
     // Typedefs to make code more readable
     typedef Matrix<T, N, 1> VectorType;
     typedef Matrix<T, N, N> MatrixType;
+    typedef Matrix<T, N, Eigen::Dynamic> MatrixXType;
 
     typedef const Ref<const VectorType> RefVector;
+    typedef const Ref<const MatrixXType> RefMatrixX;
     typedef const Ref<const MatrixType> RefMatrix;
 
     typedef Ref<MatrixType> RefOutMatrix;
+    typedef Ref<MatrixXType> RefOutMatrixX;
     typedef Ref<VectorType> RefOutVector;
 
     MatrixType U, V, numer, denom, A_scaled, A2, A4, A6, A8, tmp, eye, tmp2, D, Dinv, Abal;
-    VectorType v_tmp, vTmp1, vTmp2;
+    VectorType vTmp1, vTmp2;
+    MatrixXType v_tmp;
     PartialPivLU<MatrixType> ppLU;
     int squarings;
     int maxMultiplications;
 
     MatrixType metaProds[METAPROD_SIZE]; // Should be enough to not check every time?
 
+    BalancingMethods<T, N> balanceUtil;
+    bool balancing;
+
 public:
     MatrixExponential();
     explicit MatrixExponential(int n);
 
     void resize(int n);
+
+    void setBalancing(bool yesOrNo){ balancing = yesOrNo; }
+
+    bool getBalancing(){ return balancing; }
 
     int getSquarings() const { return squarings; }
 
@@ -75,7 +87,7 @@ public:
     void compute(RefMatrix& A, RefOutMatrix out);
 
     /** Compute the product between the exponential of the given matrix arg and the given
-     * vector v. The result is written it the output variable result.
+     * vector v. The result is written it the output variable out.
      * The optional parameter vec_squarings specifies how many of the squaring operations
      * are performed through matrix-vector products. The remaining squaring operations are
      * then performed through matrix-matrix products, as in the classical scaling-and-squaring
@@ -85,6 +97,13 @@ public:
      * maximum speed, she/he should test different values of vec_squarings.
      */
     void computeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings = -1);
+
+    /**
+     * Compute the product between the exponential of the given matrix arg and the given
+     * matrix v. The result is written it the output variable out. 
+     * A matrix to use as a buffer (same size as v) must be provided by the user to avoid dynamic memory allocation.
+     */
+    void computeExpTimesMatrix(RefMatrix& A, RefMatrixX& v, RefOutMatrixX buffer, RefOutMatrixX out, int vec_squarings = -1);
 
 private:
     void init(int n);
@@ -138,6 +157,7 @@ private:
 template <typename T, int N>
 MatrixExponential<T, N>::MatrixExponential()
 {
+    balancing = true;
     if (N == Dynamic) {
         init(2); // Init to dym 2 for no particular reason
     } else {
@@ -148,6 +168,7 @@ MatrixExponential<T, N>::MatrixExponential()
 template <typename T, int N>
 MatrixExponential<T, N>::MatrixExponential(int n)
 {
+    balancing = true;
     init(n);
 }
 
@@ -155,6 +176,7 @@ template <typename T, int N>
 void MatrixExponential<T, N>::init(int n)
 {
     size = n;
+    balanceUtil.init(n);
     U.resize(n, n);
     V.resize(n, n);
     numer.resize(n, n);
@@ -171,7 +193,7 @@ void MatrixExponential<T, N>::init(int n)
     Abal.resize(n, n);
     eye = MatrixType::Identity(n, n);
     ppLU = PartialPivLU<MatrixType>(n);
-    v_tmp.resize(n);
+    v_tmp.resize(n,1);
     vTmp1.resize(n);
     vTmp2.resize(n);
     squarings = 0;
@@ -210,14 +232,29 @@ void MatrixExponential<T, N>::compute(RefMatrix& A, RefOutMatrix out)
 template <typename T, int N>
 void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix& A, RefVector& v, RefOutVector out, int vec_squarings)
 {
-    computeUV(A); // Pade approximant is (U+V) / (-U+V)
+    computeExpTimesMatrix(A, v, v_tmp, out, vec_squarings);
+}
+
+template <typename T, int N>
+void MatrixExponential<T, N>::computeExpTimesMatrix(RefMatrix& A, RefMatrixX& v, RefOutMatrixX buffer, RefOutMatrixX out, int vec_squarings)
+{
+    if(balancing){
+        balanceUtil.balanceRodney(A, Abal, D, Dinv);
+        // A = D * Abal * Dinv
+        // check l1 norm has been reduced 
+        // const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
+        computeUV(Abal); // Pade approximant is (U+V) / (-U+V)
+    }
+    else{
+        computeUV(A); // Pade approximant is (U+V) / (-U+V)
+    }
     numer = U + V;
     denom = -U + V;
     ppLU.compute(denom);
     tmp = ppLU.solve(numer);
 
     if (vec_squarings < 0) {
-        vec_squarings = int(floor(1.4427 * log(size) + 0.529));
+        vec_squarings = int(floor(1.4427 * log(double(size)/double(v.cols())) + 0.529));
     }
 
     // number of squarings implemented via matrix-matrix multiplications
@@ -235,11 +272,22 @@ void MatrixExponential<T, N>::computeExpTimesVector(RefMatrix& A, RefVector& v, 
     //int two_pow_s = (int)std::pow(2, vec_squarings);
     unsigned int two_pow_s = 1U << (unsigned int)vec_squarings;
 
-    v_tmp = v;
-    for (unsigned int i = 0; i < two_pow_s; i++) {
-        out.noalias() = tmp * v_tmp;
-        v_tmp = out;
+    if(balancing){
+        buffer.noalias() = Dinv.diagonal().cwiseProduct(v);
+        for (unsigned int i = 0; i < two_pow_s; i++) {
+            out.noalias() = tmp * buffer;
+            buffer = out;
+        }
+        out.noalias() = D.diagonal().cwiseProduct(buffer);
     }
+    else{
+        buffer = v;
+        for (unsigned int i = 0; i < two_pow_s; i++) {
+            out.noalias() = tmp * buffer;
+            buffer = out;
+        }
+    }
+    
 }
 
 template <typename T, int N>
@@ -308,7 +356,7 @@ void MatrixExponential<T, N>::computeUV(RefMatrix& A)
         default: {
             squarings = nMul - 6;
  
-             A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
+            A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
             // std::cout << "Ascaled: " << std::endl
             //           << A_scaled << std::endl;
 

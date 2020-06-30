@@ -25,11 +25,11 @@ class BalancingMethods {
     Matrix<T, 1, N> columnNorms; // Used in balancing
     MatrixType allColumnNorms; // Used in balancing
 
-    void init(int n);
-
 public:
     BalancingMethods();
     explicit BalancingMethods(int n);
+
+    void init(int n);
 
     int balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter = 0);
     int balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter = 0);

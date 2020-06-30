@@ -251,6 +251,7 @@ private:
     // Preallocating useful stuff
     DynVector res1, res2, res3, x0, z1, z2;
     DynMatrix res1all, res2all, res3all, A0, A1, A2;
+    DynMatrix Z_12, Z_12_buffer, integralsTmp;
 
     bool timesVector;
     int TVSquarings, squaringsUsed;
@@ -266,6 +267,7 @@ public:
     void setMaxMultiplications(int mm);
     int getMaxMultiplications();
     void useTV(bool yesOrNo) { timesVector = yesOrNo; }
+    void useBalancing(bool yesOrNo);
     bool isTVUsed() { return timesVector; }
     void setTVSquarings(int TVSquarings) { this->TVSquarings = TVSquarings; }
     int getTVSquarings() { return TVSquarings; }
@@ -294,7 +296,19 @@ public:
 template <typename T>
 LDSUtility<T, Dynamic>::LDSUtility(int n)
 {
+    timesVector = true;
+    TVSquarings = -1;
+    squaringsUsed = 0;
+    useBalancing(true);
     resize(n);
+}
+
+template <typename T>
+void LDSUtility<T, Dynamic>::useBalancing(bool yesOrNo)
+{ 
+    expUtil1.setBalancing(yesOrNo);
+    expUtil2.setBalancing(yesOrNo);
+    expUtil3.setBalancing(yesOrNo);
 }
 
 // Properties about Max Multiplications
@@ -316,9 +330,6 @@ template <typename T>
 void LDSUtility<T, Dynamic>::resize(int n)
 {
     this->n = n;
-    timesVector = false;
-    TVSquarings = -1;
-    squaringsUsed = 0;
     expUtil1.resize(n + 1);
     expUtil2.resize(n + 2);
     expUtil3.resize(n + 3);
@@ -342,6 +353,13 @@ void LDSUtility<T, Dynamic>::resize(int n)
     A2 = DynMatrix::Zero(n + 3, n + 3);
     z2 = DynVector::Zero(n + 3, 1);
     z2(n + 2, 0) = 1;
+
+    // Stuff for ComputeIntegrals
+    Z_12 = DynMatrix::Zero(n+3, 2);
+    Z_12(n+1, 0) = 1.;
+    Z_12(n+2, 1) = 1.;
+    Z_12_buffer= DynMatrix::Zero(n+3, 2);
+    integralsTmp = DynMatrix::Zero(n+3, 2);
 }
 
 template <typename T>
@@ -427,13 +445,17 @@ void LDSUtility<T, Dynamic>::ComputeIntegrals(RefMatrix& A, RefVector& b, RefVec
     A2(n + 1, n + 2) = 1;
     A2 *= step;
 
-    // Matrix exponential and extracting the interesting result
-    expUtil3.compute(A2, res3all);
-    // cout << res3all << endl;
-    // res3.noalias() = res3all * z2;
-
-    outInt = res3all.block(0, n + 1, n, 1);
-    outDoubleInt = res3all.block(0, n + 2, n, 1);
+    if (timesVector) {
+        expUtil3.computeExpTimesMatrix(A2, Z_12, Z_12_buffer, integralsTmp);
+        outInt = integralsTmp.block(0, 0, n, 1);
+        outDoubleInt = integralsTmp.block(0, 1, n, 1);
+    }
+    else{
+        // Matrix exponential and extracting the interesting result
+        expUtil3.compute(A2, res3all);
+        outInt = res3all.block(0, n + 1, n, 1);
+        outDoubleInt = res3all.block(0, n + 2, n, 1);
+    }
 }
 
 }
