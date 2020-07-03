@@ -59,6 +59,7 @@ private:
     PartialPivLU<MatrixType> ppLU;
     int squarings;
     int maxMultiplications;
+    int nMul; // actual number of matrix multiplications used
 
     MatrixType metaProds[METAPROD_SIZE]; // Should be enough to not check every time?
 
@@ -80,6 +81,8 @@ public:
     int getMaxMultiplications() const { return maxMultiplications; }
     // TODO some input check would be nice
     void setMaxMultiplications(int ms) { maxMultiplications = ms; }
+
+    int getMatrixMultiplications(){ return nMul; }
 
     /** 
      * Compute the exponential of the given matrix arg and writes it in result.
@@ -158,6 +161,7 @@ template <typename T, int N>
 MatrixExponential<T, N>::MatrixExponential()
 {
     balancing = true;
+    maxMultiplications = -1;
     if (N == Dynamic) {
         init(2); // Init to dym 2 for no particular reason
     } else {
@@ -169,6 +173,7 @@ template <typename T, int N>
 MatrixExponential<T, N>::MatrixExponential(int n)
 {
     balancing = true;
+    maxMultiplications = -1;
     init(n);
 }
 
@@ -197,7 +202,6 @@ void MatrixExponential<T, N>::init(int n)
     vTmp1.resize(n);
     vTmp2.resize(n);
     squarings = 0;
-    maxMultiplications = -1;
     for (int i = 0; i < METAPROD_SIZE; i++) {
         metaProds[i].resize(n, n);
     }
@@ -325,7 +329,7 @@ void MatrixExponential<T, N>::computeUV(RefMatrix& A)
     const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
 
     if (maxMultiplications >= 0) {
-        int nMul = determineMul(l1norm);
+        nMul = determineMul(l1norm);
         
         if (nMul > maxMultiplications)
             nMul = maxMultiplications;

@@ -266,6 +266,8 @@ public:
 
     void setMaxMultiplications(int mm);
     int getMaxMultiplications();
+    int getMatrixMultiplications(){ return expUtil3.getMatrixMultiplications(); }
+
     void useTV(bool yesOrNo) { timesVector = yesOrNo; }
     void useBalancing(bool yesOrNo);
     bool isTVUsed() { return timesVector; }
