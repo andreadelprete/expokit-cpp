@@ -35,8 +35,8 @@ int main()
     MatrixXd A(N, N);
     MatrixXd B(N, N);
     MatrixXd out(N, N);
-    MatrixXd D(N, N);
-    MatrixXd Dinv(N, N);
+    VectorXd D(N, N);
+    VectorXd Dinv(N, N);
 
     BalancingMethods<double, Dynamic> util(N);
     MatrixExponential<double, Dynamic> expUtil(N);
@@ -73,18 +73,18 @@ int main()
 Matrix<double, N, N> james2014Generator()
 {
     Matrix<double, N, N> A = Matrix<double, N, N>::Random();
-    Matrix<double, N, N> D = Matrix<double, N, N>::Zero();
-    Matrix<double, N, N> Dinv = Matrix<double, N, N>::Zero();
+    Matrix<double, N, 1> D = Matrix<double, N, 1>::Zero();
+    Matrix<double, N, 1> Dinv = Matrix<double, N, 1>::Zero();
 
     for (int i = 0; i < N; i++) {
         unsigned int e = rand() % 20;
         unsigned int twoPow = 1U << e;
 
-        D(i, i) = twoPow;
-        Dinv(i, i) = 1.0 / twoPow;
+        D(i) = twoPow;
+        Dinv(i) = 1.0 / twoPow;
     }
 
-    return Dinv * A * D;
+    return Dinv.asDiagonal() * A * D.asDiagonal();
 }
 
 /*

@@ -53,8 +53,8 @@ private:
     typedef Ref<MatrixXType> RefOutMatrixX;
     typedef Ref<VectorType> RefOutVector;
 
-    MatrixType U, V, numer, denom, A_scaled, A2, A4, A6, A8, tmp, eye, tmp2, D, Dinv, Abal;
-    VectorType vTmp1, vTmp2;
+    MatrixType U, V, numer, denom, A_scaled, A2, A4, A6, A8, tmp, eye, tmp2, Abal;
+    VectorType D, Dinv, vTmp1, vTmp2;
     MatrixXType v_tmp;
     PartialPivLU<MatrixType> ppLU;
     int squarings;
@@ -193,8 +193,8 @@ void MatrixExponential<T, N>::init(int n)
     tmp.resize(n, n);
     tmp2.resize(n, n);
     A_scaled.resize(n, n);
-    D.setIdentity(n, n);
-    Dinv.setIdentity(n, n);
+    D.setOnes(n);
+    Dinv.setOnes(n);
     Abal.resize(n, n);
     eye = MatrixType::Identity(n, n);
     ppLU = PartialPivLU<MatrixType>(n);
@@ -291,12 +291,12 @@ void MatrixExponential<T, N>::computeExpTimesMatrix(RefMatrix& A, RefMatrixX& v,
 
         START_PROFILER("MatrixExponential::unbalancing");
         if(balancing){
-            buffer.noalias() = Dinv.diagonal().cwiseProduct(v);
+            buffer.noalias() = Dinv.cwiseProduct(v);
             for (unsigned int i = 0; i < two_pow_s; i++) {
                 out.noalias() = tmp * buffer;
                 buffer = out;
             }
-            out.noalias() = D.diagonal().cwiseProduct(buffer);
+            out.noalias() = D.cwiseProduct(buffer);
         }
         else{
             buffer = v;
@@ -311,12 +311,12 @@ void MatrixExponential<T, N>::computeExpTimesMatrix(RefMatrix& A, RefMatrixX& v,
         START_PROFILER("MatrixExponential::unbalancing");
         if(balancing){
             // out = D*ppLU*numer*Dinv*v
-            buffer.noalias() = Dinv.diagonal().cwiseProduct(v);
+            buffer.noalias() = Dinv.cwiseProduct(v);
             out.noalias() = numer * buffer;
             START_PROFILER("MatrixExponential::solveLinSys");
             buffer.noalias() = ppLU.solve(out);
             STOP_PROFILER("MatrixExponential::solveLinSys");
-            out.noalias() = D.diagonal().cwiseProduct(buffer);
+            out.noalias() = D.cwiseProduct(buffer);
         }
         else{
             out.noalias() = tmp * v;

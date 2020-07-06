@@ -31,8 +31,8 @@ public:
 
     void init(int n);
 
-    int balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter = 0);
-    int balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter = 0);
+    int balanceNew(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter = 0);
+    int balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter = 0);
 };
 
 template <typename T, int N>
@@ -60,11 +60,15 @@ void BalancingMethods<T, N>::init(int n)
 }
 
 template <typename T, int N>
-int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter)
+int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter)
 {
     B = A; // Copy
-    D = MatrixType::Identity(size, size);
-    Dinv = MatrixType::Identity(size, size);
+    for(int i=0; i<size; ++i){
+        D(i) = 1;
+        Dinv(i) = 1;
+    }
+    // D.setOnes(size);
+    // Dinv.setOnes(size);
 
     columnNorms = B.cwiseAbs().colwise().sum();
     allColumnNorms = MatrixType::Zero(size, size);
@@ -102,13 +106,13 @@ int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatri
             break; // Do not continue looking
 
         if (iMin == jMax) {
-            D(iMin, iMin) /= 2;
-            Dinv(iMin, iMin) *= 2;
+            D(iMin) /= 2;
+            Dinv(iMin) *= 2;
             B.col(iMin) /= 2;
             B.row(iMin) *= 2;
         } else {
-            D(iMin, iMin) *= 2;
-            Dinv(iMin, iMin) /= 2;
+            D(iMin) *= 2;
+            Dinv(iMin) /= 2;
             B.col(iMin) *= 2;
             B.row(iMin) /= 2;
         }
@@ -122,16 +126,17 @@ int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatri
 }
 
 template <typename T, int N>
-int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter)
+int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter)
 {
     // it may be better not to initialize D, Dinv and use instead the specified values as warm start
-    D.setIdentity(size, size);
-    Dinv.setIdentity(size, size);
-
+    for(int i=0; i<size; ++i){
+        D(i) = 1;
+        Dinv(i) = 1;
+    }
+    // D.setOnes(size);
+    // Dinv.setOnes(size);
     B = A;
-
     T c, r, s, f;
-
     bool converged = false;
     int it = 0;
     while (!converged) {
@@ -157,8 +162,8 @@ int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMa
 
             if (c * c + r * r < 0.95 * s) {
                 converged = false;
-                D(i, i) = f * D(i, i);
-                Dinv(i, i) = Dinv(i, i) / f;
+                D(i) = f * D(i);
+                Dinv(i) = Dinv(i) / f;
                 B.col(i) = f * B.col(i);
                 B.row(i) = B.row(i) / f;
             }

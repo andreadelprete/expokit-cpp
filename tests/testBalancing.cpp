@@ -21,17 +21,17 @@ int main()
         -2.87160379e+05, 4.70987189e+05, -7.37804710e-01,
         6.75828111e-01;
     MatrixXd B(N, N);
-    MatrixXd D(N, N);
-    MatrixXd Dinv(N, N);
+    VectorXd D(N);
+    VectorXd Dinv(N);
 
     BalancingMethods<double, Dynamic> util(N);
 
     util.balanceNew(A, B, D, Dinv);
-    if ((A - D * B * Dinv).eval().norm() != 0)
+    if ((A - D.asDiagonal() * B * Dinv.asDiagonal()).eval().norm() != 0)
         return -1;
 
     util.balanceRodney(A, B, D, Dinv);
-    if ((A - D * B * Dinv).eval().norm() != 0)
+    if ((A - D.asDiagonal() * B * Dinv.asDiagonal()).eval().norm() != 0)
         return -1;
 
     // TODO test for actual NB correctness, get results from python
