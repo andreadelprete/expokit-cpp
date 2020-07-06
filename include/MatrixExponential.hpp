@@ -398,7 +398,6 @@ void MatrixExponential<T, N>::computeUV(RefMatrix& A)
 
         default: {
             squarings = nMul - 6;
- 
             A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
             // std::cout << "Ascaled: " << std::endl
             //           << A_scaled << std::endl;
@@ -411,14 +410,19 @@ void MatrixExponential<T, N>::computeUV(RefMatrix& A)
             squarings = determineSquarings(A_l1norm);
             A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
             matrix_exp_pade13(A_scaled);
+            nMul = 6+squarings;
         } else if (A_l1norm < 1.495585217958292e-002) {
             matrix_exp_pade3(A);
+            nMul = 2;
         } else if (A_l1norm < 2.539398330063230e-001) {
             matrix_exp_pade5(A);
+            nMul = 3;
         } else if (A_l1norm < 9.504178996162932e-001) {
             matrix_exp_pade7(A);
+            nMul = 4;
         } else {
             matrix_exp_pade9(A);
+            nMul = 5;
         }
     }
 }
