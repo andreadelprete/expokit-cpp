@@ -60,6 +60,7 @@ private:
     int squarings;
     int maxMultiplications;
     int nMul; // actual number of matrix multiplications used
+    double A_l1norm; // l1 norm of the matrix A
 
     MatrixType metaProds[METAPROD_SIZE]; // Should be enough to not check every time?
 
@@ -85,6 +86,7 @@ public:
     void setMaxMultiplications(int ms) { maxMultiplications = ms; }
 
     int getMatrixMultiplications(){ return nMul; }
+    double getL1Norm(){ return A_l1norm; }
 
     /** 
      * Compute the exponential of the given matrix arg and writes it in result.
@@ -162,6 +164,7 @@ private:
 template <typename T, int N>
 MatrixExponential<T, N>::MatrixExponential()
 {
+    A_l1norm = 0.0;
     balancing = true;
     warmStartBalancing = true;
     maxMultiplications = -1;
@@ -175,6 +178,7 @@ MatrixExponential<T, N>::MatrixExponential()
 template <typename T, int N>
 MatrixExponential<T, N>::MatrixExponential(int n)
 {
+    A_l1norm = 0.0;
     balancing = true;
     warmStartBalancing = true;
     maxMultiplications = -1;
@@ -361,10 +365,10 @@ template <typename T, int N>
 void MatrixExponential<T, N>::computeUV(RefMatrix& A)
 {
     squarings = 0;
-    const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
+    A_l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
 
     if (maxMultiplications >= 0) {
-        nMul = determineMul(l1norm);
+        nMul = determineMul(A_l1norm);
         
         if (nMul > maxMultiplications)
             nMul = maxMultiplications;
@@ -403,15 +407,15 @@ void MatrixExponential<T, N>::computeUV(RefMatrix& A)
         }
         }
     } else { // Classic algorithm
-        if (l1norm > 2.097847961257068e+000) {
-            squarings = determineSquarings(l1norm);
+        if (A_l1norm > 2.097847961257068e+000) {
+            squarings = determineSquarings(A_l1norm);
             A_scaled = A.unaryExpr(Eigen::internal::MatrixExponentialScalingOp<double>(squarings));
             matrix_exp_pade13(A_scaled);
-        } else if (l1norm < 1.495585217958292e-002) {
+        } else if (A_l1norm < 1.495585217958292e-002) {
             matrix_exp_pade3(A);
-        } else if (l1norm < 2.539398330063230e-001) {
+        } else if (A_l1norm < 2.539398330063230e-001) {
             matrix_exp_pade5(A);
-        } else if (l1norm < 9.504178996162932e-001) {
+        } else if (A_l1norm < 9.504178996162932e-001) {
             matrix_exp_pade7(A);
         } else {
             matrix_exp_pade9(A);
