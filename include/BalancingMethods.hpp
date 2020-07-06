@@ -124,8 +124,9 @@ int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatri
 template <typename T, int N>
 int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter)
 {
-    D = MatrixType::Identity(size, size);
-    Dinv = MatrixType::Identity(size, size);
+    // it may be better not to initialize D, Dinv and use instead the specified values as warm start
+    D.setIdentity(size, size);
+    Dinv.setIdentity(size, size);
 
     B = A;
 

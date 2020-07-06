@@ -193,8 +193,8 @@ void MatrixExponential<T, N>::init(int n)
     tmp.resize(n, n);
     tmp2.resize(n, n);
     A_scaled.resize(n, n);
-    D.resize(n, n);
-    Dinv.resize(n, n);
+    D.setIdentity(n, n);
+    Dinv.setIdentity(n, n);
     Abal.resize(n, n);
     eye = MatrixType::Identity(n, n);
     ppLU = PartialPivLU<MatrixType>(n);
@@ -243,55 +243,86 @@ template <typename T, int N>
 void MatrixExponential<T, N>::computeExpTimesMatrix(RefMatrix& A, RefMatrixX& v, RefOutMatrixX buffer, RefOutMatrixX out, int vec_squarings)
 {
     if(balancing){
+        START_PROFILER("MatrixExponential::balanceRodney");
         balanceUtil.balanceRodney(A, Abal, D, Dinv);
+        STOP_PROFILER("MatrixExponential::balanceRodney");
         // A = D * Abal * Dinv
         // check l1 norm has been reduced 
         // const double l1norm = A.cwiseAbs().colwise().sum().maxCoeff();
+        START_PROFILER("MatrixExponential::computeUV");
         computeUV(Abal); // Pade approximant is (U+V) / (-U+V)
+        STOP_PROFILER("MatrixExponential::computeUV");
     }
     else{
         computeUV(A); // Pade approximant is (U+V) / (-U+V)
     }
+    START_PROFILER("MatrixExponential::computeLU");
     numer = U + V;
     denom = -U + V;
     ppLU.compute(denom);
-    tmp = ppLU.solve(numer);
+    STOP_PROFILER("MatrixExponential::computeLU");
 
-    if (vec_squarings < 0) {
-        vec_squarings = int(floor(1.4427 * log(double(size)/double(v.cols())) + 0.529));
-    }
+    unsigned int two_pow_s = 1;
+    if (squarings>0){
+        START_PROFILER("MatrixExponential::solveLinSys");
+        tmp = ppLU.solve(numer);
+        STOP_PROFILER("MatrixExponential::solveLinSys");
 
-    // number of squarings implemented via matrix-matrix multiplications
-    int mat_squarings = squarings - vec_squarings;
-    if (mat_squarings < 0) {
-        mat_squarings = 0;
-        vec_squarings = squarings;
-    }
-
-    for (int i = 0; i < mat_squarings; i++) {
-        tmp2.noalias() = tmp * tmp;
-        tmp = tmp2;
-    }
-
-    //int two_pow_s = (int)std::pow(2, vec_squarings);
-    unsigned int two_pow_s = 1U << (unsigned int)vec_squarings;
-
-    if(balancing){
-        buffer.noalias() = Dinv.diagonal().cwiseProduct(v);
-        for (unsigned int i = 0; i < two_pow_s; i++) {
-            out.noalias() = tmp * buffer;
-            buffer = out;
+        START_PROFILER("MatrixExponential::matrixSquaring");
+        if(vec_squarings < 0) {
+            vec_squarings = int(floor(1.4427 * log(double(size)/double(v.cols())) + 0.529));
         }
-        out.noalias() = D.diagonal().cwiseProduct(buffer);
-    }
+
+        // number of squarings implemented via matrix-matrix multiplications
+        int mat_squarings = squarings - vec_squarings;
+        if (mat_squarings < 0) {
+            mat_squarings = 0;
+            vec_squarings = squarings;
+        }
+
+        for (int i = 0; i < mat_squarings; i++) {
+            tmp2.noalias() = tmp * tmp;
+            tmp = tmp2;
+        }
+
+        //int two_pow_s = (int)std::pow(2, vec_squarings);
+        two_pow_s = 1U << (unsigned int)vec_squarings;
+        STOP_PROFILER("MatrixExponential::matrixSquaring");
+
+        START_PROFILER("MatrixExponential::unbalancing");
+        if(balancing){
+            buffer.noalias() = Dinv.diagonal().cwiseProduct(v);
+            for (unsigned int i = 0; i < two_pow_s; i++) {
+                out.noalias() = tmp * buffer;
+                buffer = out;
+            }
+            out.noalias() = D.diagonal().cwiseProduct(buffer);
+        }
+        else{
+            buffer = v;
+            for (unsigned int i = 0; i < two_pow_s; i++) {
+                out.noalias() = tmp * buffer;
+                buffer = out;
+            }
+        }
+        STOP_PROFILER("MatrixExponential::unbalancing");
+    } 
     else{
-        buffer = v;
-        for (unsigned int i = 0; i < two_pow_s; i++) {
-            out.noalias() = tmp * buffer;
-            buffer = out;
+        START_PROFILER("MatrixExponential::unbalancing");
+        if(balancing){
+            // out = D*ppLU*numer*Dinv*v
+            buffer.noalias() = Dinv.diagonal().cwiseProduct(v);
+            out.noalias() = numer * buffer;
+            START_PROFILER("MatrixExponential::solveLinSys");
+            buffer.noalias() = ppLU.solve(out);
+            STOP_PROFILER("MatrixExponential::solveLinSys");
+            out.noalias() = D.diagonal().cwiseProduct(buffer);
         }
+        else{
+            out.noalias() = tmp * v;
+        }
+        STOP_PROFILER("MatrixExponential::unbalancing");
     }
-    
 }
 
 template <typename T, int N>
