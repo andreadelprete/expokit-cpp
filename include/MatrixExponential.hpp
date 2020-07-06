@@ -64,7 +64,8 @@ private:
     MatrixType metaProds[METAPROD_SIZE]; // Should be enough to not check every time?
 
     BalancingMethods<T, N> balanceUtil;
-    bool balancing;
+    bool balancing;             // true if matrix balancing should be used
+    bool warmStartBalancing;    // true if balancing matrices computed at previous iteration should be used as initial guess
 
 public:
     MatrixExponential();
@@ -73,13 +74,14 @@ public:
     void resize(int n);
 
     void setBalancing(bool yesOrNo){ balancing = yesOrNo; }
-
     bool getBalancing(){ return balancing; }
+
+    void setBalancingWarmStart(bool yesOrNo){ warmStartBalancing = yesOrNo; }
+    bool getBalancingWarmStart(){ return warmStartBalancing; }
 
     int getSquarings() const { return squarings; }
 
     int getMaxMultiplications() const { return maxMultiplications; }
-    // TODO some input check would be nice
     void setMaxMultiplications(int ms) { maxMultiplications = ms; }
 
     int getMatrixMultiplications(){ return nMul; }
@@ -161,6 +163,7 @@ template <typename T, int N>
 MatrixExponential<T, N>::MatrixExponential()
 {
     balancing = true;
+    warmStartBalancing = true;
     maxMultiplications = -1;
     if (N == Dynamic) {
         init(2); // Init to dym 2 for no particular reason
@@ -173,6 +176,7 @@ template <typename T, int N>
 MatrixExponential<T, N>::MatrixExponential(int n)
 {
     balancing = true;
+    warmStartBalancing = true;
     maxMultiplications = -1;
     init(n);
 }
@@ -244,7 +248,7 @@ void MatrixExponential<T, N>::computeExpTimesMatrix(RefMatrix& A, RefMatrixX& v,
 {
     if(balancing){
         START_PROFILER("MatrixExponential::balanceRodney");
-        balanceUtil.balanceRodney(A, Abal, D, Dinv);
+        balanceUtil.balanceRodney(A, Abal, D, Dinv, 0, warmStartBalancing);
         STOP_PROFILER("MatrixExponential::balanceRodney");
         // A = D * Abal * Dinv
         // check l1 norm has been reduced 

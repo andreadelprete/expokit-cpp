@@ -31,8 +31,11 @@ public:
 
     void init(int n);
 
-    int balanceNew(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter = 0);
-    int balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter = 0);
+    /** Given A, compute B, D and Dinv such that B has lower norm than A and: A = D * B * Dinv */
+    int balanceNew(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter = 0, bool warmStart=false);
+
+    /** Given A, compute B, D and Dinv such that B has lower norm than A and: A = D * B * Dinv */
+    int balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter = 0, bool warmStart=false);
 };
 
 template <typename T, int N>
@@ -60,16 +63,21 @@ void BalancingMethods<T, N>::init(int n)
 }
 
 template <typename T, int N>
-int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter)
+int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter, bool warmStart)
 {
-    B = A; // Copy
-    for(int i=0; i<size; ++i){
-        D(i) = 1;
-        Dinv(i) = 1;
+    if(warmStart){
+        // do not to initialize D, Dinv and use instead the specified values as warm start
+        // A = D * B * Dinv 
+        B.noalias() = Dinv.asDiagonal() * A * D.asDiagonal();
     }
-    // D.setOnes(size);
-    // Dinv.setOnes(size);
-
+    else{
+        for(int i=0; i<size; ++i){
+            D(i) = 1;
+            Dinv(i) = 1;
+        }
+        B = A;
+    }
+  
     columnNorms = B.cwiseAbs().colwise().sum();
     allColumnNorms = MatrixType::Zero(size, size);
     int jMax = 0;
@@ -126,16 +134,21 @@ int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutVecto
 }
 
 template <typename T, int N>
-int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter)
+int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter, bool warmStart)
 {
-    // it may be better not to initialize D, Dinv and use instead the specified values as warm start
-    for(int i=0; i<size; ++i){
-        D(i) = 1;
-        Dinv(i) = 1;
+    if(warmStart){
+        // do not to initialize D, Dinv and use instead the specified values as warm start
+        // A = D * B * Dinv 
+        B.noalias() = Dinv.asDiagonal() * A * D.asDiagonal();
     }
-    // D.setOnes(size);
-    // Dinv.setOnes(size);
-    B = A;
+    else{
+        for(int i=0; i<size; ++i){
+            D(i) = 1;
+            Dinv(i) = 1;
+        }
+        B = A;
+    }
+    
     T c, r, s, f;
     bool converged = false;
     int it = 0;
@@ -148,7 +161,7 @@ int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVe
             s = c * c + r * r;
             f = 1;
 
-            while (c < r / 2 && c != 0) {
+            while (2 * c < r && c != 0) {
                 c = c * 2;
                 r = r / 2;
                 f = f * 2;
