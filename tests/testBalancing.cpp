@@ -24,17 +24,28 @@ int main()
     MatrixXd D(N, N);
     MatrixXd Dinv(N, N);
 
+    double NBres[N] = { 4.0, 1.0, 2.0, 1.0 };
+    double Rres[N] = { 2.0, 1.0, 0.00390625, 1.0 };
+
     BalancingMethods<double, Dynamic> util(N);
 
     util.balanceNew(A, B, D, Dinv);
     if ((A - D * B * Dinv).eval().norm() != 0)
         return -1;
 
+    for (int i = 0; i < N; ++i) {
+        if (D(i, i) != NBres[i])
+            return -1;
+    }
+
     util.balanceRodney(A, B, D, Dinv);
     if ((A - D * B * Dinv).eval().norm() != 0)
         return -1;
 
-    // TODO test for actual NB correctness, get results from python
+    for (int i = 0; i < N; ++i) {
+        if (D(i, i) != Rres[i])
+            return -1;
+    }
 
     return 0;
 }

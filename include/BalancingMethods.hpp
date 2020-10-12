@@ -2,6 +2,7 @@
 #define BALANCING_METHODS_H
 
 #include <Eigen/Core>
+#include "utils/stop-watch.h"
 
 using namespace Eigen;
 
@@ -24,6 +25,7 @@ class BalancingMethods {
 
     Matrix<T, 1, N> columnNorms; // Used in balancing
     MatrixType allColumnNorms; // Used in balancing
+    MatrixType temp; // Used in combined balancing
 
     void init(int n);
 
@@ -33,6 +35,8 @@ public:
 
     int balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter = 0);
     int balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter = 0);
+    int balanceCombined(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv);
+
 };
 
 template <typename T, int N>
@@ -57,11 +61,13 @@ void BalancingMethods<T, N>::init(int n)
     size = n;
     columnNorms.resize(1, size);
     allColumnNorms = MatrixType::Zero(size, size);
+    temp.resize(n, n);
 }
 
 template <typename T, int N>
 int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter)
 {
+    // START_PROFILER("preamble");
     B = A; // Copy
     D = MatrixType::Identity(size, size);
     Dinv = MatrixType::Identity(size, size);
@@ -77,8 +83,11 @@ int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatri
     if (maxIter == 0)
         maxIter = 15 * size; // Simplyfied - to be checked
 
+    // STOP_PROFILER("preamble");
+
     int it = 0;
     for (; it < maxIter; ++it) {
+        // START_PROFILER("innerfor");
         for (int k = 0; k < size; ++k) {
             T possibleNorm;
             if (k == jMax) {
@@ -96,7 +105,9 @@ int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatri
                 iMin = k;
             }
         }
+        // STOP_PROFILER("innerfor");
 
+        // START_PROFILER("confirm");
         // If last loop failed to find better solution
         if (vMin >= columnNorms(jMax))
             break; // Do not continue looking
@@ -116,6 +127,7 @@ int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatri
         // Save selected norms for new loop
         columnNorms = allColumnNorms.row(iMin);
         columnNorms.maxCoeff(&jMax);
+        // STOP_PROFILER("confirm");
     }
 
     return it;
@@ -169,6 +181,25 @@ int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMa
 
     return it;
 }
+
+
+
+template <typename T, int N>
+int BalancingMethods<T, N>::balanceCombined(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv) {
+    T oNorm = A.cwiseAbs().colwise().sum().maxCoeff();
+    int it = balanceRodney(A, temp, D, Dinv);
+    T normRodney = temp.cwiseAbs().colwise().sum().maxCoeff();
+
+    // Compute again from scratch
+    if(oNorm < normRodney) {
+        it = balanceNew(A, B, D, Dinv);
+    } else { // chain results
+        it += balanceNew(temp, B, D, Dinv);
+    }
+
+    return it;
+}
+
 
 }
 

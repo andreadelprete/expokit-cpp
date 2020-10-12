@@ -26,43 +26,71 @@ using namespace Eigen;
 #define N 64
 #define TESTS 10000
 
-Matrix<double, N, N> james2014Generator();
+MatrixXd james2014Generator(int n);
 
-int main()
+int main(int argc, const char* argv[])
 {
+    int dim = 10;
+    if (argc > 1) {
+        dim = std::atoi(argv[1]);
+    }
+
     cout << "Running new balance" << endl;
 
-    MatrixXd A(N, N);
-    MatrixXd B(N, N);
-    MatrixXd out(N, N);
-    MatrixXd D(N, N);
-    MatrixXd Dinv(N, N);
+    MatrixXd A(dim, dim);
+    MatrixXd B(dim, dim);
+    MatrixXd out(dim, dim);
+    MatrixXd D(dim, dim);
+    MatrixXd Dinv(dim, dim);
 
-    BalancingMethods<double, Dynamic> util(N);
-    MatrixExponential<double, Dynamic> expUtil(N);
+    BalancingMethods<double, Dynamic> util(dim);
+    MatrixExponential<double, Dynamic> expUtil(dim);
 
     for (int i = 0; i < TESTS; ++i) {
-        A = james2014Generator();
+        A = james2014Generator(dim);
 
-        START_PROFILER("EXPnotBalanced");
-        expUtil.compute(A, out);
-        STOP_PROFILER("EXPnotBalanced");
+        // START_PROFILER("EXPnotBalanced");
+        // expUtil.compute(A, out);
+        // STOP_PROFILER("EXPnotBalanced");
 
-        START_PROFILER("NB");
+        // START_PROFILER("BALNB");
         util.balanceNew(A, B, D, Dinv);
-        STOP_PROFILER("NB");
+        double NBnorm = B.cwiseAbs().colwise().sum().maxCoeff();
+        cout << NBnorm << "\t";
+        // STOP_PROFILER("BALNB");
 
-        START_PROFILER("EXPNBBalanced");
-        expUtil.compute(B, out);
-        STOP_PROFILER("EXPNBBalanced");
+        // START_PROFILER("EXPNBBalanced");
+        // expUtil.compute(B, out);
+        // STOP_PROFILER("EXPNBBalanced");
 
-        START_PROFILER("Rodney");
+        // START_PROFILER("BALRodney");
         util.balanceRodney(A, B, D, Dinv);
-        STOP_PROFILER("Rodney");
+        double RodNorm = B.cwiseAbs().colwise().sum().maxCoeff();
+        cout << RodNorm << "\t";
+        // STOP_PROFILER("BALRodney");
 
-        START_PROFILER("EXPRodneyBalanced");
-        expUtil.compute(B, out);
-        STOP_PROFILER("EXPRodneyBalanced");
+        // START_PROFILER("EXPRodneyBalanced");
+        // expUtil.compute(B, out);
+        // STOP_PROFILER("EXPRodneyBalanced");
+
+        // START_PROFILER("BALCombined");
+        util.balanceCombined(A, B, D, Dinv);
+        double CombNorm = B.cwiseAbs().colwise().sum().maxCoeff();
+        cout << CombNorm << "\t";
+        // STOP_PROFILER("BALCombined");
+
+        // START_PROFILER("EXPCombinedBalanced");
+        // expUtil.compute(B, out);
+        // STOP_PROFILER("EXPCombinedBalanced");
+
+        if (RodNorm < NBnorm || RodNorm < CombNorm)
+            cout << "Rodney BETTER" << endl;
+        else if (NBnorm < RodNorm || NBnorm < RodNorm)
+            cout << "NB BETTER" << endl;
+        else if (CombNorm < NBnorm || CombNorm < RodNorm)
+            cout << "Comb BETTER" << endl;
+        else if (CombNorm == NBnorm && CombNorm == RodNorm && RodNorm == NBnorm)
+            cout << "ALL EQUAL" << endl;
     }
 
     // Print out results
@@ -70,13 +98,13 @@ int main()
 }
 
 // Generate test matrices
-Matrix<double, N, N> james2014Generator()
+MatrixXd james2014Generator(int n)
 {
-    Matrix<double, N, N> A = Matrix<double, N, N>::Random();
-    Matrix<double, N, N> D = Matrix<double, N, N>::Zero();
-    Matrix<double, N, N> Dinv = Matrix<double, N, N>::Zero();
+    MatrixXd A = MatrixXd::Random(n, n);
+    MatrixXd D = MatrixXd::Zero(n, n);
+    MatrixXd Dinv = MatrixXd::Zero(n, n);
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < n; i++) {
         unsigned int e = rand() % 20;
         unsigned int twoPow = 1U << e;
 
