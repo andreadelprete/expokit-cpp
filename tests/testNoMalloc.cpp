@@ -32,8 +32,8 @@ int main()
     b << 4, 3, 2, 1;
 
     MatrixXd B(N, N);
-    MatrixXd D(N, N);
-    MatrixXd Dinv(N, N);
+    VectorXd D(N, N);
+    VectorXd Dinv(N, N);
 
     MatrixExponential<double, Dynamic> expUtil(N);
     LDSUtility<double, Dynamic> lds(N);

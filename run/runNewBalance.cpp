@@ -37,11 +37,11 @@ int main(int argc, const char* argv[])
 
     cout << "Running new balance" << endl;
 
-    MatrixXd A(dim, dim);
-    MatrixXd B(dim, dim);
-    MatrixXd out(dim, dim);
-    MatrixXd D(dim, dim);
-    MatrixXd Dinv(dim, dim);
+    MatrixXd A(N, N);
+    MatrixXd B(N, N);
+    MatrixXd out(N, N);
+    VectorXd D(N, N);
+    VectorXd Dinv(N, N);
 
     BalancingMethods<double, Dynamic> util(dim);
     MatrixExponential<double, Dynamic> expUtil(dim);
@@ -100,19 +100,19 @@ int main(int argc, const char* argv[])
 // Generate test matrices
 MatrixXd james2014Generator(int n)
 {
-    MatrixXd A = MatrixXd::Random(n, n);
-    MatrixXd D = MatrixXd::Zero(n, n);
-    MatrixXd Dinv = MatrixXd::Zero(n, n);
+    Matrix<double, N, N> A = Matrix<double, N, N>::Random();
+    Matrix<double, N, 1> D = Matrix<double, N, 1>::Zero();
+    Matrix<double, N, 1> Dinv = Matrix<double, N, 1>::Zero();
 
     for (int i = 0; i < n; i++) {
         unsigned int e = rand() % 20;
         unsigned int twoPow = 1U << e;
 
-        D(i, i) = twoPow;
-        Dinv(i, i) = 1.0 / twoPow;
+        D(i) = twoPow;
+        Dinv(i) = 1.0 / twoPow;
     }
 
-    return Dinv * A * D;
+    return Dinv.asDiagonal() * A * D.asDiagonal();
 }
 
 /*

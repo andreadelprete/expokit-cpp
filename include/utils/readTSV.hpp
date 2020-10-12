@@ -10,7 +10,7 @@
 using namespace std;
 using namespace Eigen;
 
-vector<MatrixXd> readTSV(const char filename[], int rows, int cols, char delimiter='\t')
+vector<MatrixXd> readTSV(const std::string &filename, int rows, int cols, char delimiter='\t')
 {
     fstream fin(filename, ios::in); // File pointer
     vector<MatrixXd> result;

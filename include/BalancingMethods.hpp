@@ -27,16 +27,17 @@ class BalancingMethods {
     MatrixType allColumnNorms; // Used in balancing
     MatrixType temp; // Used in combined balancing
 
-    void init(int n);
-
 public:
     BalancingMethods();
     explicit BalancingMethods(int n);
 
-    int balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter = 0);
-    int balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter = 0);
-    int balanceCombined(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv);
+    void init(int n);
 
+    /** Given A, compute B, D and Dinv such that B has lower norm than A and: A = D * B * Dinv */
+    int balanceNew(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter = 0, bool warmStart=false);
+
+    /** Given A, compute B, D and Dinv such that B has lower norm than A and: A = D * B * Dinv */
+    int balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter = 0, bool warmStart=false);
 };
 
 template <typename T, int N>
@@ -65,13 +66,21 @@ void BalancingMethods<T, N>::init(int n)
 }
 
 template <typename T, int N>
-int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter)
+int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter, bool warmStart)
 {
-    // START_PROFILER("preamble");
-    B = A; // Copy
-    D = MatrixType::Identity(size, size);
-    Dinv = MatrixType::Identity(size, size);
-
+    if(warmStart){
+        // do not to initialize D, Dinv and use instead the specified values as warm start
+        // A = D * B * Dinv 
+        B.noalias() = Dinv.asDiagonal() * A * D.asDiagonal();
+    }
+    else{
+        for(int i=0; i<size; ++i){
+            D(i) = 1;
+            Dinv(i) = 1;
+        }
+        B = A;
+    }
+  
     columnNorms = B.cwiseAbs().colwise().sum();
     allColumnNorms = MatrixType::Zero(size, size);
     int jMax = 0;
@@ -113,13 +122,13 @@ int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatri
             break; // Do not continue looking
 
         if (iMin == jMax) {
-            D(iMin, iMin) /= 2;
-            Dinv(iMin, iMin) *= 2;
+            D(iMin) /= 2;
+            Dinv(iMin) *= 2;
             B.col(iMin) /= 2;
             B.row(iMin) *= 2;
         } else {
-            D(iMin, iMin) *= 2;
-            Dinv(iMin, iMin) /= 2;
+            D(iMin) *= 2;
+            Dinv(iMin) /= 2;
             B.col(iMin) *= 2;
             B.row(iMin) /= 2;
         }
@@ -134,15 +143,22 @@ int BalancingMethods<T, N>::balanceNew(RefMatrix& A, RefOutMatrix B, RefOutMatri
 }
 
 template <typename T, int N>
-int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv, int maxIter)
+int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter, bool warmStart)
 {
-    D = MatrixType::Identity(size, size);
-    Dinv = MatrixType::Identity(size, size);
-
-    B = A;
-
+    if(warmStart){
+        // do not to initialize D, Dinv and use instead the specified values as warm start
+        // A = D * B * Dinv 
+        B.noalias() = Dinv.asDiagonal() * A * D.asDiagonal();
+    }
+    else{
+        for(int i=0; i<size; ++i){
+            D(i) = 1;
+            Dinv(i) = 1;
+        }
+        B = A;
+    }
+    
     T c, r, s, f;
-
     bool converged = false;
     int it = 0;
     while (!converged) {
@@ -154,7 +170,7 @@ int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMa
             s = c * c + r * r;
             f = 1;
 
-            while (c < r / 2 && c != 0) {
+            while (2 * c < r && c != 0) {
                 c = c * 2;
                 r = r / 2;
                 f = f * 2;
@@ -168,8 +184,8 @@ int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutMa
 
             if (c * c + r * r < 0.95 * s) {
                 converged = false;
-                D(i, i) = f * D(i, i);
-                Dinv(i, i) = Dinv(i, i) / f;
+                D(i) = f * D(i);
+                Dinv(i) = Dinv(i) / f;
                 B.col(i) = f * B.col(i);
                 B.row(i) = B.row(i) / f;
             }

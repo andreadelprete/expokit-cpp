@@ -63,6 +63,7 @@ SET(HEADERS
     include/MatrixExponential.hpp
     include/MatExpIntegral.hpp
     include/LDSUtility.hpp
+    include/BalancingMethods.hpp
     include/utils/stop-watch.h
     include/utils/Stdafx.h
 )
