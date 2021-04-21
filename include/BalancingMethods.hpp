@@ -38,6 +38,8 @@ public:
 
     /** Given A, compute B, D and Dinv such that B has lower norm than A and: A = D * B * Dinv */
     int balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv, int maxIter = 0, bool warmStart=false);
+
+    int balanceCombined(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv);
 };
 
 template <typename T, int N>
@@ -201,7 +203,7 @@ int BalancingMethods<T, N>::balanceRodney(RefMatrix& A, RefOutMatrix B, RefOutVe
 
 
 template <typename T, int N>
-int BalancingMethods<T, N>::balanceCombined(RefMatrix& A, RefOutMatrix B, RefOutMatrix D, RefOutMatrix Dinv) {
+int BalancingMethods<T, N>::balanceCombined(RefMatrix& A, RefOutMatrix B, RefOutVector D, RefOutVector Dinv) {
     T oNorm = A.cwiseAbs().colwise().sum().maxCoeff();
     int it = balanceRodney(A, temp, D, Dinv);
     T normRodney = temp.cwiseAbs().colwise().sum().maxCoeff();
