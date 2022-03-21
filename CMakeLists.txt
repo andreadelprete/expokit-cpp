@@ -9,9 +9,11 @@ INCLUDE(cmake/ide.cmake)
 INCLUDE(cmake/apple.cmake)
 include(cmake/test.cmake)
 
+PROJECT(expokit)
 SET(PROJECT_NAME expokit)
-SET(PROJECT_DESCRIPTION "")
-SET(PROJECT_URL "")
+SET(PROJECT_VERSION 1.0.0)
+SET(PROJECT_DESCRIPTION "C Library for computing matrix exponentials and related quantities")
+SET(PROJECT_URL "https://github.com/andreadelprete/expokit-cpp")
 OPTION(INSTALL_DOCUMENTATION "Generate and install the documentation" OFF)
 
 SET(DOXYGEN_USE_MATHJAX YES)
